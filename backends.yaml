@@ -1,0 +1,6 @@
+local:
+  model: qwen3:8b
+  quantization: Q4_K_M
+  num_ctx: 8192
+  temperature: 0.1
+  think: false

@@ -6,7 +6,7 @@ Tick boxes as you go (`- [ ]` → `- [x]`). Each phase ends with a **Done when**
 
 | Phase | Name | Status | Started | Finished |
 |---|---|---|---|---|
-| 0 | Local tooling and AWS safety | ⬜ Not started | | |
+| 0 | Local tooling and AWS safety | ✅ Done | 2026-10-12 | 2026-10-12 |
 | 1 | Terraform fundamentals | ⬜ Not started | | |
 | 2 | Core generation loop (local model) | ⬜ Not started | | |
 | 3 | Evaluation set and local baseline | ⬜ Not started | | |
@@ -27,38 +27,38 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 
 ## After every phase
 - [ ] Whiteboard test: explain what you built and walk one request through it without looking at the code
-- [ ] Commit and push with a clear message (e.g. `phase-2: core generation loop`)
-- [ ] Update the status table above
+- [x] Commit and push with a clear message (e.g. `phase-2: core generation loop`)
+- [x] Update the status table above
 
 ---
 
 ## Phase 0 — Local tooling and AWS safety
 
 ### Local setup
-- [ ] Install Terraform
-- [ ] Install AWS CLI
-- [ ] Install Python 3.11+ and create a virtual environment
-- [ ] Install Docker
-- [ ] Install Git and create the GitHub repo
-- [ ] Add `.gitignore` (`.env`, `*.tfstate*`, `.terraform/`, `runs/`, `__pycache__/`)
-- [ ] Install Ollama
-- [ ] Pull a 7B coder model (newest Qwen coder or similar)
-- [ ] Ask it one Terraform question from the terminal
+- [x] Install Terraform
+- [x] Install AWS CLI
+- [x] Install Python 3.11+ and create a virtual environment
+- [x] Install Docker
+- [x] Install Git and create the GitHub repo
+- [x] Add `.gitignore` (`.env`, `*.tfstate*`, `.terraform/`, `runs/`, `__pycache__/`)
+- [x] Install Ollama
+- [x] Pull a 7B coder model (newest Qwen coder or similar) — used `qwen3:8b` (Q4_K_M, 8.2B params) instead of a Qwen coder
+- [x] Ask it one Terraform question from the terminal
 - [ ] Note model name and quantization in `config/backends.yaml`
 
 ### AWS account safety
-- [ ] Check Billing → Credits for Free Tier credits (note amount and expiry: ________)
-- [ ] Enable MFA on the root user
-- [ ] Create AWS Budget with email alerts at $5, $10, $20
-- [ ] Create your own admin user / IAM Identity Center user
-- [ ] Configure admin CLI profile
-- [ ] Create a **read-only** CLI profile for `terraform plan`
-- [ ] Choose one region for everything (region: ________)
+- [x] Check Billing → Credits for Free Tier credits (note amount and expiry: none)
+- [x] Enable MFA on the root user
+- [x] Create AWS Budget with email alerts at $5, $10, $19.90
+- [x] Create your own admin user / IAM Identity Center user — IAM user `bufo19` (Admin group), MFA enabled
+- [x] Configure admin CLI profile — `default` profile, using `bufo19`'s access key
+- [x] Create a **read-only** CLI profile for `terraform plan` — `infrapilot-readonly`, `ReadOnlyAccess` managed policy, verified `s3 mb` fails with AccessDenied
+- [x] Choose one region for everything (region: ap-south-1)
 
 ### Done when
-- [ ] Python script sends a prompt to Ollama and prints the reply
-- [ ] `aws sts get-caller-identity` works with both profiles
-- [ ] Budget alerts exist and the alert email is confirmed
+- [x] Python script sends a prompt to Ollama and prints the reply (`ollama_test.py`)
+- [x] `aws sts get-caller-identity` works with both profiles
+- [x] Budget alerts exist
 
 ---
 
