@@ -30,7 +30,7 @@ response.raise_for_status()
 
 data = response.json()
 
-print(data["response"])
+print(data["message"]["content"])
 print("------------------------------")
 print("tokens in :", data["prompt_eval_count"])
 print("tokens out :", data["eval_count"])
