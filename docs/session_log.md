@@ -98,7 +98,7 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Terraform in learning/: provider, S3, variables/outputs, SQS, IAM, Lambda, default_tags
 - Read terraform.tfstate, run plan -out and show -json, destroy and re-apply
 
-## 2026-11-10 — Phase 1: Terraform S3 and SQS (steps 1-3)
+## 2026-11-10 — Phase 1: Terraform S3, SQS, IAM and Lambda (steps 1-5)
 
 ### What I did
 - Wrote `learning/main.tf` (terraform block, aws + random providers, provider with `default_tags`, random_id, S3 bucket, public access block) and `learning/variables.tf` (region, name_prefix)
@@ -106,6 +106,8 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Added `learning/outputs.tf` (bucket_name, bucket_arn)
 - Ran apply, `terraform output`, `terraform output -raw bucket_arn` and destroy with outputs.tf in place: 3 added, 3 destroyed, outputs printed after apply, bucket checked in the console
 - Added `aws_sqs_queue.learn` (name from `var.name_prefix`, no random suffix, since SQS names only need to be unique per account and region); ran plan/apply/destroy, 4 added, 4 destroyed, queue seen in the console
+- Added IAM: `aws_iam_role` (trust policy for lambda.amazonaws.com), AWSLambdaBasicExecutionRole attachment, inline `aws_iam_role_policy` allowing only `sqs:SendMessage` on the queue ARN; ran plan/apply/destroy, 7 added, 7 destroyed
+- Added the Lambda (`archive_file` zip, python3.12, `QUEUE_URL` env var from the queue URL) plus outputs `queue_url` and `function_name`; apply built 8 resources, invoked it from the CLI, got a message_id, then destroyed all 8
 
 ### What I learned
 - Apply order followed dependencies: random_id, then the bucket, then the public access block. Destroy ran in reverse
@@ -121,11 +123,17 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - SQS is slow: 25s to create, 43s to destroy (S3 ~1s). A deleted queue's name can't be reused for 60 seconds
 - Terraform's provider default for `max_message_size` is 262144 (256 KiB), while the console form showed 1024 KiB. Always read the plan instead of assuming Terraform copies console defaults
 - Computed values (`sqs_managed_sse_enabled = true`, `kms_data_key_reuse_period_seconds = 300`) were "(known after apply)" in the plan and show real values in state/destroy
+- A reference creates a dependency: the inline policy uses `aws_sqs_queue.learn.arn`, so it was created only after the queue existed; destroy ran in reverse
+- The policy data source showed "will be read during apply" because it depends on a value not known at plan time (queue ARN); the trust-policy data source had no unknowns, so it was read at plan time
+- The Terraform policies match the console ones I built by hand: same trust policy, same single-action SQS permission, no wildcards
+- The Lambda was created last, after the inline policy; destroy ran in reverse
+- `source_code_hash` comes from the zip; a changed handler.py changes the hash and triggers an update
+- `default_tags` puts project=infrapilot into `tags_all` on every taggable resource (bucket, queue, role, function), so no per-resource tags are needed
+- Lambda auto-creates its CloudWatch log group on first invoke; Terraform doesn't manage it, so destroy leaves it behind and I deleted it with `aws logs delete-log-group`. Cleanup in Phases 6-7 must cover log groups
+- PowerShell treats `<...>` as a reserved operator, so placeholders from instructions must be replaced, not typed
 
 ### Still to do in Phase 1
-- IAM role and policy, Lambda (zip), reference one resource from another for real (queue ARN into the IAM policy, queue URL into the Lambda env var)
-- Move `default_tags` check: already done in main.tf, so just tick it once the other resources show `tags_all`
-- Read terraform.tfstate, `plan -out=plan.tfplan` and `show -json`, destroy and re-apply, then the concept write-up and whiteboard test
-- Add `*.tfplan` to .gitignore before step 7
-
-
+- State and plan exercises: read terraform.tfstate, `plan -out=plan.tfplan` + `show -json`, destroy and re-apply, poll the queue
+- Concept write-up (provider, resource, variable, output, state, plan vs apply, what destroy uses state for)
+- Optional bonus: ask qwen3 for the same Terraform and note its mistakes
+- Whiteboard test

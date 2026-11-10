@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.7"
+    }
   }
 }
 
@@ -104,4 +108,43 @@ resource "aws_iam_role_policy" "send_to_queue" {
   name   = "send-to-learn-queue"
   role   = aws_iam_role.lambda.id
   policy = data.aws_iam_policy_document.send_to_queue.json
+}
+
+# Zips handler.py at plan/apply time. The zip is a build artifact in build/
+# (gitignored). Its output_base64sha256 changes whenever handler.py changes,
+# which is how Terraform knows the function code needs updating.
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/handler.py"
+  output_path = "${path.module}/build/lambda.zip"
+}
+
+# The function. Four references wire it up:
+#   role             -> the IAM role ARN (function waits for the role)
+#   filename         -> the zip produced by the archive data source
+#   source_code_hash -> redeploy when the zip contents change
+#   QUEUE_URL        -> the queue's URL, known only after the queue exists
+# python3.12 is a stable runtime (not the preview one the console defaulted to).
+resource "aws_lambda_function" "learn" {
+  function_name = "${var.name_prefix}-fn"
+  role          = aws_iam_role.lambda.arn
+  runtime       = "python3.12"
+  handler       = "handler.lambda_handler" # file handler.py, function lambda_handler
+
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+
+  environment {
+    variables = {
+      QUEUE_URL = aws_sqs_queue.learn.url
+    }
+  }
+
+  # Nothing in this resource reads the policies, so Terraform would not order
+  # them first on its own. depends_on forces the SQS permission and the logging
+  # attachment to exist before the function does, so the first invoke works.
+  depends_on = [
+    aws_iam_role_policy.send_to_queue,
+    aws_iam_role_policy_attachment.lambda_basic_execution,
+  ]
 }

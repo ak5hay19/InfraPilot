@@ -78,10 +78,10 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] Add `variables.tf`
 - [x] Add `outputs.tf`
 - [x] Add the SQS queue
-- [ ] Reference one resource from another (learn references/dependencies)
-- [ ] Add IAM role + policy
-- [ ] Add the Lambda (zip packaging)
-- [ ] Add `default_tags` (`project = "infrapilot"`)
+- [x] Reference one resource from another (learn references/dependencies)
+- [x] Add IAM role + policy
+- [x] Add the Lambda (zip packaging)
+- [x] Add `default_tags` (`project = "infrapilot"`)
 
 ### Understanding state and plans
 - [x] Open and read `terraform.tfstate`
