@@ -131,6 +131,10 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - `default_tags` puts project=infrapilot into `tags_all` on every taggable resource (bucket, queue, role, function), so no per-resource tags are needed
 - Lambda auto-creates its CloudWatch log group on first invoke; Terraform doesn't manage it, so destroy leaves it behind and I deleted it with `aws logs delete-log-group`. Cleanup in Phases 6-7 must cover log groups
 - PowerShell treats `<...>` as a reserved operator, so placeholders from instructions must be replaced, not typed
+- Saved plans: `terraform apply plan.tfplan` applies exactly what was reviewed, with no yes prompt. In PowerShell the flag must be quoted: `terraform plan "-out=plan.tfplan"`
+- Plan JSON has 9 entries for 8 managed resources because the data source `data.aws_iam_policy_document.send_to_queue` shows up with action "read" (it depends on a value unknown until apply). A plan guard in Phase 4 must filter on `mode == "managed"` and ignore "read" actions
+- `terraform state list` shows data sources as well as resources
+- The SQS poll returned my message, so the Terraform-built role, policy, Lambda and queue work end to end
 
 ### Still to do in Phase 1
 - State and plan exercises: read terraform.tfstate, `plan -out=plan.tfplan` + `show -json`, destroy and re-apply, poll the queue

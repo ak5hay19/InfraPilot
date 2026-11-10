@@ -86,16 +86,16 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 ### Understanding state and plans
 - [x] Open and read `terraform.tfstate`
 - [ ] Write down in your own words what state is and why losing it is bad
-- [ ] Run `terraform plan -out=plan.tfplan`
-- [ ] Run `terraform show -json plan.tfplan` and skim the structure
-- [ ] Destroy and re-apply everything to prove it reproduces
+- [x] Run `terraform plan -out=plan.tfplan`
+- [x] Run `terraform show -json plan.tfplan` and skim the structure
+- [x] Destroy and re-apply everything to prove it reproduces
 
 ### Bonus
 - [ ] Ask the local model to write the same Terraform and note its mistakes
 
 ### Done when
 - [ ] You can explain: provider, resource, variable, output, state, plan vs apply, what `destroy` uses state for
-- [ ] One `apply` builds all four resources; one `destroy` removes them
+- [x] One `apply` builds all four resources; one `destroy` removes them
 
 ---
 
