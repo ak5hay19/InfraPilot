@@ -7,7 +7,7 @@ Tick boxes as you go (`- [ ]` → `- [x]`). Each phase ends with a **Done when**
 | Phase | Name | Status | Started | Finished |
 |---|---|---|---|---|
 | 0 | Local tooling and AWS safety | ✅ Done | 2026-10-12 | 2026-10-12 |
-| 1 | Terraform fundamentals | ⬜ Not started | | |
+| 1 | Terraform fundamentals | 🟨 In progress | 2026-10-18 | | 
 | 2 | Core generation loop (local model) | ⬜ Not started | | |
 | 3 | Evaluation set and local baseline | ⬜ Not started | | |
 | 4 | Static guardrails and retry loop | ⬜ Not started | | |
@@ -62,11 +62,11 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 
 ---
 
-## Phase 1 — Terraform fundamentals
+## Phase 1 — Terraform fundamentals    
 
 ### Console first (by hand)
-- [ ] Create an S3 bucket and explore its settings
-- [ ] Create an SQS queue and explore its settings
+- [x] Create an S3 bucket and explore its settings
+- [x] Create an SQS queue and explore its settings
 - [ ] Create an IAM role and read its trust policy
 - [ ] Create a small Lambda that sends a message to the queue
 - [ ] Test the Lambda and see the message arrive
