@@ -108,6 +108,7 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Added `aws_sqs_queue.learn` (name from `var.name_prefix`, no random suffix, since SQS names only need to be unique per account and region); ran plan/apply/destroy, 4 added, 4 destroyed, queue seen in the console
 - Added IAM: `aws_iam_role` (trust policy for lambda.amazonaws.com), AWSLambdaBasicExecutionRole attachment, inline `aws_iam_role_policy` allowing only `sqs:SendMessage` on the queue ARN; ran plan/apply/destroy, 7 added, 7 destroyed
 - Added the Lambda (`archive_file` zip, python3.12, `QUEUE_URL` env var from the queue URL) plus outputs `queue_url` and `function_name`; apply built 8 resources, invoked it from the CLI, got a message_id, then destroyed all 8
+- Concept notes written in docs/phase1_concepts.md
 
 ### What I learned
 - Apply order followed dependencies: random_id, then the bucket, then the public access block. Destroy ran in reverse
@@ -136,8 +137,8 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - `terraform state list` shows data sources as well as resources
 - The SQS poll returned my message, so the Terraform-built role, policy, Lambda and queue work end to end
 
-### Still to do in Phase 1
-- State and plan exercises: read terraform.tfstate, `plan -out=plan.tfplan` + `show -json`, destroy and re-apply, poll the queue
-- Concept write-up (provider, resource, variable, output, state, plan vs apply, what destroy uses state for)
-- Optional bonus: ask qwen3 for the same Terraform and note its mistakes
-- Whiteboard test
+### Tomorrow (10 min)
+- Reword 2-3 concepts in docs/phase1_concepts.md in my own words, say the 60-second whiteboard script out loud, then tick those boxes. Optional: qwen3 bonus at the start of Phase 2.
+
+### Next
+- Phase 2, starting with a 5-10 line design note on the ModelBackend interface.

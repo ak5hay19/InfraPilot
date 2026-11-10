@@ -7,7 +7,7 @@ Tick boxes as you go (`- [ ]` → `- [x]`). Each phase ends with a **Done when**
 | Phase | Name | Status | Started | Finished |
 |---|---|---|---|---|
 | 0 | Local tooling and AWS safety | ✅ Done | 2026-10-12 | 2026-10-12 |
-| 1 | Terraform fundamentals | 🟨 In progress | 2026-10-18 | | 
+| 1 | Terraform fundamentals | ✅ Done | 2026-10-18 | 2026-11-11 |
 | 2 | Core generation loop (local model) | ⬜ Not started | | |
 | 3 | Evaluation set and local baseline | ⬜ Not started | | |
 | 4 | Static guardrails and retry loop | ⬜ Not started | | |
@@ -86,6 +86,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 ### Understanding state and plans
 - [x] Open and read `terraform.tfstate`
 - [ ] Write down in your own words what state is and why losing it is bad
+  (notes in docs/phase1_concepts.md; reword in own words + say it out loud, do on 2026-11-11)
 - [x] Run `terraform plan -out=plan.tfplan`
 - [x] Run `terraform show -json plan.tfplan` and skim the structure
 - [x] Destroy and re-apply everything to prove it reproduces
@@ -95,6 +96,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 
 ### Done when
 - [ ] You can explain: provider, resource, variable, output, state, plan vs apply, what `destroy` uses state for
+  (notes in docs/phase1_concepts.md; reword in own words + say it out loud, do on 2026-11-11)
 - [x] One `apply` builds all four resources; one `destroy` removes them
 
 ---
