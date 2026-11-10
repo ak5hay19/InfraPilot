@@ -97,3 +97,30 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Lambda, test the message, delete everything
 - Terraform in learning/: provider, S3, variables/outputs, SQS, IAM, Lambda, default_tags
 - Read terraform.tfstate, run plan -out and show -json, destroy and re-apply
+
+## 2026-11-10 — Phase 1: Terraform S3 (steps 1-2)
+
+### What I did
+- Wrote `learning/main.tf` (terraform block, aws + random providers, provider with `default_tags`, random_id, S3 bucket, public access block) and `learning/variables.tf` (region, name_prefix)
+- Ran init, plan, apply, destroy myself: 3 added, 3 destroyed, bucket seen in the console and then gone
+- Added `learning/outputs.tf` (bucket_name, bucket_arn)
+- Ran apply, `terraform output`, `terraform output -raw bucket_arn` and destroy with outputs.tf in place: 3 added, 3 destroyed, outputs printed after apply, bucket checked in the console
+
+### What I learned
+- Apply order followed dependencies: random_id, then the bucket, then the public access block. Destroy ran in reverse
+- `(known after apply)` means AWS decides the value. The bucket name was unknown at plan time because it depends on random_id
+- State holds attributes I never wrote (AES256 encryption, versioning false, a grant). These are AWS defaults read back
+- `tags` vs `tags_all`: the provider's `default_tags` show up in `tags_all`, not in `tags`
+- random_id is removed from state on destroy, so the next apply gets a new bucket name
+- Outputs show up in the plan as "Changes to Outputs" with `(known after apply)`, print at the end of apply, and can be read again with `terraform output`. `-raw` prints the bare value, which is handy for scripts and the CLI
+- Destroy also removes the outputs from state ("Changes to Outputs: - bucket_arn -> null")
+- Second apply produced a different bucket name (`infrapilot-learn-04c4b592` vs `07a03593` the first time), confirming the random suffix is recreated after a destroy
+- Typo `terraform destory` is harmless: Terraform says "no command named" and suggests the right one
+
+### Still to do in Phase 1
+- SQS queue, IAM role and policy, Lambda (zip), reference one resource from another for real (queue ARN into the IAM policy, queue URL into the Lambda env var)
+- Move `default_tags` check: already done in main.tf, so just tick it once the other resources show `tags_all`
+- Read terraform.tfstate, `plan -out=plan.tfplan` and `show -json`, destroy and re-apply, then the concept write-up and whiteboard test
+- Add `*.tfplan` to .gitignore before step 7
+
+

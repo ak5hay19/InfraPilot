@@ -73,10 +73,10 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [ ] Delete everything you created
 
 ### Terraform, one resource at a time (in `learning/`)
-- [ ] Write the `provider "aws"` block with version pinning
-- [ ] S3 bucket → `init`, `plan`, `apply`, `destroy`
-- [ ] Add `variables.tf`
-- [ ] Add `outputs.tf`
+- [x] Write the `provider "aws"` block with version pinning
+- [x] S3 bucket → `init`, `plan`, `apply`, `destroy`
+- [x] Add `variables.tf`
+- [x] Add `outputs.tf`
 - [ ] Add the SQS queue
 - [ ] Reference one resource from another (learn references/dependencies)
 - [ ] Add IAM role + policy
@@ -84,7 +84,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [ ] Add `default_tags` (`project = "infrapilot"`)
 
 ### Understanding state and plans
-- [ ] Open and read `terraform.tfstate`
+- [x] Open and read `terraform.tfstate`
 - [ ] Write down in your own words what state is and why losing it is bad
 - [ ] Run `terraform plan -out=plan.tfplan`
 - [ ] Run `terraform show -json plan.tfplan` and skim the structure
