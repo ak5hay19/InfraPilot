@@ -98,13 +98,14 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Terraform in learning/: provider, S3, variables/outputs, SQS, IAM, Lambda, default_tags
 - Read terraform.tfstate, run plan -out and show -json, destroy and re-apply
 
-## 2026-11-10 — Phase 1: Terraform S3 (steps 1-2)
+## 2026-11-10 — Phase 1: Terraform S3 and SQS (steps 1-3)
 
 ### What I did
 - Wrote `learning/main.tf` (terraform block, aws + random providers, provider with `default_tags`, random_id, S3 bucket, public access block) and `learning/variables.tf` (region, name_prefix)
 - Ran init, plan, apply, destroy myself: 3 added, 3 destroyed, bucket seen in the console and then gone
 - Added `learning/outputs.tf` (bucket_name, bucket_arn)
 - Ran apply, `terraform output`, `terraform output -raw bucket_arn` and destroy with outputs.tf in place: 3 added, 3 destroyed, outputs printed after apply, bucket checked in the console
+- Added `aws_sqs_queue.learn` (name from `var.name_prefix`, no random suffix, since SQS names only need to be unique per account and region); ran plan/apply/destroy, 4 added, 4 destroyed, queue seen in the console
 
 ### What I learned
 - Apply order followed dependencies: random_id, then the bucket, then the public access block. Destroy ran in reverse
@@ -116,9 +117,13 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Destroy also removes the outputs from state ("Changes to Outputs: - bucket_arn -> null")
 - Second apply produced a different bucket name (`infrapilot-learn-04c4b592` vs `07a03593` the first time), confirming the random suffix is recreated after a destroy
 - Typo `terraform destory` is harmless: Terraform says "no command named" and suggests the right one
+- Independent resources are created in parallel: queue and bucket were created at the same time after random_id; only the access block waited for the bucket
+- SQS is slow: 25s to create, 43s to destroy (S3 ~1s). A deleted queue's name can't be reused for 60 seconds
+- Terraform's provider default for `max_message_size` is 262144 (256 KiB), while the console form showed 1024 KiB. Always read the plan instead of assuming Terraform copies console defaults
+- Computed values (`sqs_managed_sse_enabled = true`, `kms_data_key_reuse_period_seconds = 300`) were "(known after apply)" in the plan and show real values in state/destroy
 
 ### Still to do in Phase 1
-- SQS queue, IAM role and policy, Lambda (zip), reference one resource from another for real (queue ARN into the IAM policy, queue URL into the Lambda env var)
+- IAM role and policy, Lambda (zip), reference one resource from another for real (queue ARN into the IAM policy, queue URL into the Lambda env var)
 - Move `default_tags` check: already done in main.tf, so just tick it once the other resources show `tags_all`
 - Read terraform.tfstate, `plan -out=plan.tfplan` and `show -json`, destroy and re-apply, then the concept write-up and whiteboard test
 - Add `*.tfplan` to .gitignore before step 7

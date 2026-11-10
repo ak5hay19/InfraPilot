@@ -77,7 +77,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] S3 bucket → `init`, `plan`, `apply`, `destroy`
 - [x] Add `variables.tf`
 - [x] Add `outputs.tf`
-- [ ] Add the SQS queue
+- [x] Add the SQS queue
 - [ ] Reference one resource from another (learn references/dependencies)
 - [ ] Add IAM role + policy
 - [ ] Add the Lambda (zip packaging)
