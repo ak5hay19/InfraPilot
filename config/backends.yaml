@@ -1,6 +1,10 @@
 local:
+  type: ollama
+  base_url: http://localhost:11434
   model: qwen3:8b
   quantization: Q4_K_M
   num_ctx: 8192
+  num_predict: 3000
   temperature: 0.1
   think: false
+  timeout_s: 300

@@ -9,3 +9,5 @@ learning/build/
 *.zip
 *.tfplan
 learning/plan.json
+*.egg-info/
+dist/

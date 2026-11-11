@@ -1,3 +1,4 @@
+# Phase 0 smoke test; delete once OllamaBackend exists.
 import requests
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -16,7 +17,7 @@ payload ={
     "think" : False, #model specific, qwen3:8b will not think for a few seconds before replying if this is set to True.
     "options" : {
         "num_ctx" : 8192,
-        "temperature" : 0.2,
+        "temperature" : 0.1,
     },
 
 }

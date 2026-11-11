@@ -143,3 +143,11 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 
 ### Next
 - Phase 2, starting with a 5-10 line design note on the ModelBackend interface.
+
+## 2026-11-11 — Phase 2 start
+
+### Housekeeping
+- Phase 1 close-out commit moved backends.yaml to config/ and simplified doc rules; this step added pyproject.toml, moved ollama_test.py to scripts/ (temp 0.1), extended backends.yaml, fixed the §4 wording in phase1_concepts.md
+
+### Design note
+**Design note.** Phase 2 turns one English sentence into Terraform files plus `validate`/`plan` results, with nothing created in AWS and no cost. A `ModelBackend` interface (`generate(messages) -> ModelResponse` with text, tokens, latency, cost, model, backend and stop_reason) hides which model runs; `OllamaBackend` is the only one for now, and `config/backends.yaml` plus `--backend` picks it. The model returns only `main.tf` and `outputs.tf` as fenced blocks under `### <filename>` headers. The runner owns `providers.tf` and `variables.tf` (pinned versions, `var.region`, `default_tags`), so the model never writes provider blocks; if it does, that's logged as its own failure. Each run gets `runs/<YYYYMMDD-HHMMSS-xxxx>/`, with the Terraform files in `tf/`. Steps run in order and stop at the first failure: `init` → `validate -json` → `plan -out` → `show -json`. They use `AWS_PROFILE=infrapilot-readonly` set only in the subprocess, the committed lock file and a shared plugin cache. Every run saves its request, messages, raw reply, logs and a `meta.json` with a fixed failure category (`parse_error, truncated, provider_block_written, init_error, validate_error, plan_error, ok`). Done when `infrapilot generate "..." --backend local` produces that folder, and nothing outside `backends/` knows the model.

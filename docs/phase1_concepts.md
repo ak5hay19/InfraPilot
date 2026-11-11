@@ -109,7 +109,7 @@ Order comes from the dependency graph. Steps on the same line can run in paralle
 
 **Apply**
 1. Plan time: read `archive_file` (zip) and `lambda_assume_role`. They have no unknowns.
-2. `random_id`, `aws_sqs_queue` and `aws_iam_role` have no dependencies, so they start at once. In my runs the queue and bucket were created at the same time.
+2. `random_id`, `aws_sqs_queue` and `aws_iam_role` have no dependencies, so they start at once. Once random_id finished, the bucket started while the queue was still creating (~25s), so they ran in parallel.
 3. Then the bucket (needs `random_id`) and the policy attachment (needs the role). `send_to_queue` data is read once the queue ARN exists. SQS takes about 25s, S3 about 1s.
 4. Then the public access block (needs the bucket) and the inline policy (needs the role and the queue ARN).
 5. Last, the Lambda: it needs the role, zip and queue URL, and `depends_on` makes it wait for both policies.

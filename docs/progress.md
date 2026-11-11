@@ -8,7 +8,7 @@ Tick boxes as you go (`- [ ]` → `- [x]`). Each phase ends with a **Done when**
 |---|---|---|---|---|
 | 0 | Local tooling and AWS safety | ✅ Done | 2026-10-12 | 2026-10-12 |
 | 1 | Terraform fundamentals | ✅ Done | 2026-10-18 | 2026-11-11 |
-| 2 | Core generation loop (local model) | ⬜ Not started | | |
+| 2 | Core generation loop (local model) | 🟨 In progress | 2026-11-11 | |
 | 3 | Evaluation set and local baseline | ⬜ Not started | | |
 | 4 | Static guardrails and retry loop | ⬜ Not started | | |
 | 5 | Switch to Bedrock and compare models | ⬜ Not started | | |
@@ -22,8 +22,8 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 ---
 
 ## Before every phase
-- [ ] Write a 5–10 line design note for the phase (what you're building, how it connects)
-- [ ] Give that note to Claude Code as context before asking for any code
+- [x] Write a 5–10 line design note for the phase (what you're building, how it connects)
+- [x] Give that note to Claude Code as context before asking for any code
 
 ## After every phase
 - [ ] Whiteboard test (optional, before interviews or presentations): walk one request through what you built without looking at the code
@@ -102,11 +102,11 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 ## Phase 2 — Core generation loop (local model)
 
 ### Design (yourself)
-- [ ] Design the `ModelBackend` interface and `ModelResponse` fields
-- [ ] Decide the CLI shape (`infrapilot generate "..." --backend local`)
-- [ ] Decide the model output format (fenced blocks per file or short JSON)
+- [x] Design the `ModelBackend` interface and `ModelResponse` fields
+- [x] Decide the CLI shape (`infrapilot generate "..." --backend local`)
+- [x] Decide the model output format (fenced blocks per file or short JSON)
 - [ ] Write the system prompt: output format, version pinning, one region, mandatory tags
-- [ ] Decide the run folder layout (`runs/<run_id>/`)
+- [x] Decide the run folder layout (`runs/<run_id>/`)
 
 ### Build (Claude Code types, you review)
 - [ ] `backends/base.py` — interface
