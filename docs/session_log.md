@@ -109,6 +109,7 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Added IAM: `aws_iam_role` (trust policy for lambda.amazonaws.com), AWSLambdaBasicExecutionRole attachment, inline `aws_iam_role_policy` allowing only `sqs:SendMessage` on the queue ARN; ran plan/apply/destroy, 7 added, 7 destroyed
 - Added the Lambda (`archive_file` zip, python3.12, `QUEUE_URL` env var from the queue URL) plus outputs `queue_url` and `function_name`; apply built 8 resources, invoked it from the CLI, got a message_id, then destroyed all 8
 - Concept notes written in docs/phase1_concepts.md
+- Dropped the own-words requirement from the checklist; documentation lives in session_log.md and phase notes (deadlines tightened).
 
 ### What I learned
 - Apply order followed dependencies: random_id, then the bucket, then the public access block. Destroy ran in reverse
@@ -137,8 +138,8 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - `terraform state list` shows data sources as well as resources
 - The SQS poll returned my message, so the Terraform-built role, policy, Lambda and queue work end to end
 
-### Tomorrow (10 min)
-- Reword 2-3 concepts in docs/phase1_concepts.md in my own words, say the 60-second whiteboard script out loud, then tick those boxes. Optional: qwen3 bonus at the start of Phase 2.
+### Status
+- Phase 1 closed. Optional: whiteboard test before interviews; qwen3 bonus at the start of Phase 2.
 
 ### Next
 - Phase 2, starting with a 5-10 line design note on the ModelBackend interface.

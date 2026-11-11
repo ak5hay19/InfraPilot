@@ -26,7 +26,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [ ] Give that note to Claude Code as context before asking for any code
 
 ## After every phase
-- [ ] Whiteboard test: explain what you built and walk one request through it without looking at the code
+- [ ] Whiteboard test (optional, before interviews or presentations): walk one request through what you built without looking at the code
 - [x] Commit and push with a clear message (e.g. `phase-2: core generation loop`)
 - [x] Update the status table above
 
@@ -44,7 +44,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] Install Ollama
 - [x] Pull a 7B coder model (newest Qwen coder or similar) — used `qwen3:8b` (Q4_K_M, 8.2B params) instead of a Qwen coder
 - [x] Ask it one Terraform question from the terminal
-- [ ] Note model name and quantization in `config/backends.yaml`
+- [x] Note model name and quantization in `config/backends.yaml`
 
 ### AWS account safety
 - [x] Check Billing → Credits for Free Tier credits (note amount and expiry: none)
@@ -67,10 +67,10 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 ### Console first (by hand)
 - [x] Create an S3 bucket and explore its settings
 - [x] Create an SQS queue and explore its settings
-- [ ] Create an IAM role and read its trust policy
-- [ ] Create a small Lambda that sends a message to the queue
-- [ ] Test the Lambda and see the message arrive
-- [ ] Delete everything you created
+- [x] Create an IAM role and read its trust policy
+- [x] Create a small Lambda that sends a message to the queue
+- [x] Test the Lambda and see the message arrive
+- [x] Delete everything you created
 
 ### Terraform, one resource at a time (in `learning/`)
 - [x] Write the `provider "aws"` block with version pinning
@@ -85,8 +85,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 
 ### Understanding state and plans
 - [x] Open and read `terraform.tfstate`
-- [ ] Write down in your own words what state is and why losing it is bad
-  (notes in docs/phase1_concepts.md; reword in own words + say it out loud, do on 2026-11-11)
+- [x] State, and why losing it is bad: documented in docs/phase1_concepts.md and docs/session_log.md
 - [x] Run `terraform plan -out=plan.tfplan`
 - [x] Run `terraform show -json plan.tfplan` and skim the structure
 - [x] Destroy and re-apply everything to prove it reproduces
@@ -95,8 +94,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [ ] Ask the local model to write the same Terraform and note its mistakes
 
 ### Done when
-- [ ] You can explain: provider, resource, variable, output, state, plan vs apply, what `destroy` uses state for
-  (notes in docs/phase1_concepts.md; reword in own words + say it out loud, do on 2026-11-11)
+- [x] Provider, resource, variable, output, state, plan vs apply, what `destroy` uses state for: documented in docs/phase1_concepts.md and docs/session_log.md
 - [x] One `apply` builds all four resources; one `destroy` removes them
 
 ---
@@ -224,7 +222,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 | Bedrock (cheap) | | | | | |
 | Bedrock (strong) | | | | | |
 
-- [ ] You can explain the quality vs cost vs latency trade-offs
+- [ ] Documented in session_log.md: the quality vs cost vs latency trade-offs
 
 ### ✅ Checkpoint 1 — presentable project
 - [ ] README draft with what works so far and the comparison table
@@ -308,7 +306,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 
 ### Design (yourself)
 - [ ] Draw the architecture diagram
-- [ ] Decide: task per job vs polling worker (and write down why)
+- [ ] Decide: task per job vs polling worker (why documented in session_log.md)
 - [ ] Decide networking: public subnet + tight SG, or VPC endpoints (no NAT Gateway)
 
 ### Container

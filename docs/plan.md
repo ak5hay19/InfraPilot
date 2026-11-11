@@ -70,7 +70,7 @@ Claude Code types the code. **You** make every decision about how things connect
 4. Reject any `"Action": "*"` or `"Resource": "*"` in IAM unless you deliberately decided it.
 5. Never paste AWS keys into prompts or commit them. Use `aws configure sso` / profiles and `.gitignore` your `.env`, `*.tfstate`, and `.terraform/`.
 
-**Interview test (check at the end of each phase):** can you whiteboard what you built and walk one request through it without looking at the code?
+**Interview test (optional, do it before interviews):** can you whiteboard what you built and walk one request through it without looking at the code?
 
 ---
 
