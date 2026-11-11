@@ -110,7 +110,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 
 ### Build (Claude Code types, you review)
 - [x] `backends/base.py` — interface
-- [ ] `backends/ollama.py` — calls Ollama's local API, returns tokens + latency
+- [x] `backends/ollama.py` — calls Ollama's local API, returns tokens + latency
 - [ ] `config/backends.yaml` loader with `--backend` switch
 - [ ] Output parser (reply → files) with a clear parse-failure error
 - [ ] Runner: write files to `runs/<run_id>/`

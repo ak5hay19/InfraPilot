@@ -154,3 +154,4 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 
 ### Build
 - backends/base.py: ModelBackend ABC, frozen ModelResponse (stop_reason normalized to stop/length/other, truncated property), BackendError for infra failures.
+- backends/ollama.py: POST /api/chat (stream off), wall-clock latency, done_reason -> stop_reason, all HTTP/connection errors -> BackendError.
