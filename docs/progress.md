@@ -109,7 +109,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] Decide the run folder layout (`runs/<run_id>/`)
 
 ### Build (Claude Code types, you review)
-- [ ] `backends/base.py` — interface
+- [x] `backends/base.py` — interface
 - [ ] `backends/ollama.py` — calls Ollama's local API, returns tokens + latency
 - [ ] `config/backends.yaml` loader with `--backend` switch
 - [ ] Output parser (reply → files) with a clear parse-failure error
