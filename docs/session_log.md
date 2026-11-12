@@ -165,3 +165,17 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Finding: AWS provider v6 adds a `region` argument to every regional resource, so a hardcoded region inside a resource is VALID and passes validate/plan; Phase 4 plan guard must reject region != ap-south-1.
 - runner/terraform.py: plan -out + show -json with AWS_PROFILE=infrapilot-readonly set only in the subprocess (static AWS_* keys stripped); plan.json saved per run; providers deleted after show.
 - pipeline.py + cli.py: `infrapilot generate` runs model -> parse -> init -> validate -> plan, stops at the first failure, always writes runs/<id>/meta.json and deletes providers. Categories: ok, backend_error, truncated, parse_error, provider_block_written, init_error, validate_error, plan_error, internal_error. Decisions: backend_error/internal_error excluded from pass rates; validate warnings don't fail a run but are recorded (validate_clean).
+
+## 2026-11-12 — Phase 2 closed
+
+### Exploration
+- 13 runs (`notes/failures.md`): 4 ok, 8 validate_error, 1 plan_error; 0 parse_error, truncated or provider_block_written. Only 3 ok runs were validate_clean, and only 1 of 13 (the log group) actually did what was asked.
+- Top failure types: hallucinated argument/attribute (4: `fifo`, `enabled`, `output_base64` x2); undeclared reference (4); plan-valid but wrong behaviour (3: SQS DLQ not wired, S3 public access block with no flags, VPC subnet with no route table association).
+- DynamoDB plan_error verdict: (b) model error, not AWS credentials. `all indexes must match a defined attribute. Unmatched indexes: ["id"]` (no `attribute` block); validate was clean, plan.log has no AccessDenied.
+- Prompt problems found (fix before the Phase 3 baseline): the "never hardcode an ARN" rule conflicts with the AWSLambdaBasicExecutionRole hint (model invented `data.aws_partition` in 3 of 3 Lambda runs); no inline `archive_file` example; no VPC given for security groups.
+
+### Environment
+- PowerShell version: check (5.1 vs 7) — quoting differs.
+
+### Next
+- Phase 3 design note (eval set + harness).

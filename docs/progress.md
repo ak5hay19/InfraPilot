@@ -8,7 +8,7 @@ Tick boxes as you go (`- [ ]` → `- [x]`). Each phase ends with a **Done when**
 |---|---|---|---|---|
 | 0 | Local tooling and AWS safety | ✅ Done | 2026-10-12 | 2026-10-12 |
 | 1 | Terraform fundamentals | ✅ Done | 2026-10-18 | 2026-11-11 |
-| 2 | Core generation loop (local model) | 🟨 In progress | 2026-11-11 | |
+| 2 | Core generation loop (local model) | ✅ Done | 2026-11-11 | 2026-11-12 |
 | 3 | Evaluation set and local baseline | ⬜ Not started | | |
 | 4 | Static guardrails and retry loop | ⬜ Not started | | |
 | 5 | Switch to Bedrock and compare models | ⬜ Not started | | |
@@ -121,12 +121,12 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] `cli.py` wiring it all together
 
 ### Explore
-- [ ] Run 10+ different requests
-- [ ] Record common failure types in `notes/failures.md` (parse failures, hallucinated arguments, missing references, wrong syntax)
+- [x] Run 10+ different requests
+- [x] Record common failure types in `notes/failures.md` (parse failures, hallucinated arguments, missing references, wrong syntax)
 
 ### Done when
-- [ ] One command takes a sentence and produces a folder with Terraform files and validate/plan results
-- [ ] Nothing outside `backends/` knows which model is running
+- [x] One command takes a sentence and produces a folder with Terraform files and validate/plan results
+- [x] Nothing outside `backends/` knows which model is running
 
 ---
 
