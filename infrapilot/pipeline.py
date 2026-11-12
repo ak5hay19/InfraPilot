@@ -63,6 +63,24 @@ def _git_commit() -> str | None:
     return commit if proc.returncode == 0 and commit else None
 
 
+def _git_dirty() -> bool | None:
+    """True if the working tree has uncommitted or untracked (non-ignored) changes."""
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=10,
+        )
+    except Exception:
+        return None
+    if proc.returncode != 0:
+        return None
+    return bool(proc.stdout.strip())
+
+
 def _write_text(path: Path, text: str) -> None:
     # newline="" keeps the text byte-for-byte (no \n -> \r\n translation on Windows).
     with open(path, "w", encoding="utf-8", newline="") as f:
@@ -83,6 +101,7 @@ def _initial_meta(run_dir: Path, request: str, backend_name: str) -> dict:
         "backend": backend_name,
         "model": None,
         "git_commit": _git_commit(),
+        "git_dirty": _git_dirty(),
         "system_prompt_sha256": None,
         "tokens_in": None,
         "tokens_out": None,

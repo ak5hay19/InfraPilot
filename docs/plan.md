@@ -155,7 +155,7 @@ If placements get busy, stop at a checkpoint and polish rather than leaving a ph
 **AWS (all yourself, in the console)**
 - Check Billing → Credits to see whether you have Free Tier credits
 - Turn on MFA for the root user; stop using root after this
-- Create an AWS Budget with email alerts at **$5, $10 and $20**
+- Create an AWS Budget with email alerts at **$5, $10 and $19.90**
 - Create your own admin user (or IAM Identity Center user) and a CLI profile
 - Create a second, **read-only** CLI profile — this is what `terraform plan` will use in Phases 2–5
 - Pick **one region** for everything
@@ -234,7 +234,7 @@ If placements get busy, stop at a checkpoint and polish rather than leaving a ph
 - Keep prompts to cheap, fast resources (see the allowlist in section 8)
 
 **Claude Code builds**
-- `eval/run_eval.py --backend local`: runs every prompt, saves results with date, git commit hash, model name and backend
+- `infrapilot eval --backend local` (code in `infrapilot/evaluation/`): runs every prompt, saves results with date, git commit hash, model name and backend
 
 **Metrics per run**
 - parse success, validate pass, plan pass, attempts used, tokens in/out, latency, cost (0 for local), failure category
@@ -415,7 +415,12 @@ Client ──► API Gateway ──► Status Lambda                    S3 (arti
 ```
 infrapilot/
 ├── README.md
-├── plan.md
+├── docs/
+│   ├── plan.md
+│   ├── progress.md
+│   ├── session_log.md
+│   └── phase1_concepts.md
+├── notes/                    # failures.md and other working notes
 ├── config/
 │   └── backends.yaml         # local (Ollama model, context size) / bedrock (model IDs, region)
 ├── learning/                 # Phase 1 Terraform exercises
@@ -426,11 +431,11 @@ infrapilot/
 │   ├── runner/               # terraform init/validate/plan/apply/destroy
 │   ├── checks/               # checkov, infracost, plan guard, match review
 │   ├── probes/               # smoke-test probes (boto3)
+│   ├── evaluation/           # `infrapilot eval` harness
 │   ├── loop.py               # retry loop / orchestration
 │   └── report.py
 ├── eval/
 │   ├── prompts.yaml
-│   ├── run_eval.py
 │   ├── results/              # dated results, tagged by backend + model
 │   └── RESULTS.md
 ├── infra/                    # Terraform for the platform itself

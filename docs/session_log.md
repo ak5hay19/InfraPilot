@@ -185,3 +185,30 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Added EXAMPLE 2 (inline archive_file Lambda + role + logging attachment) and a "never write ${ in inline code" rule.
 - Added "no data-source lookups of existing infra; create a VPC if one is needed".
 - Deliberately NOT fixed (model mistakes, stay in the baseline): DLQ wiring, DynamoDB attribute block, fifo_queue, route table association, bucket_prefix ignored. Eval set must not reuse the two example requests (SNS topic; Lambda that logs events). New system_prompt_sha256 will differ from Phase 2 runs.
+
+## 2026-11-13 — Phase 3 design note and decisions
+
+### Design note
+**Design note.** Phase 3 measures the pipeline as of Step 3.0, without changing it, so every later change can be compared against real numbers. `eval/prompts.yaml` holds 30 plain-English requests. Each states all its requirements and names no Terraform resources. 10 are easy (one service plus its own sub-resources), 12 medium (2–3 services wired together) and 8 hard (VPC networking, or 4+ services with IAM between them). None reuses the two system-prompt examples, and at most 4 repeat Phase 2 requests (`seen_in_phase2: true`). Every resource fits the draft allowlist: plan §8, VPC gateway endpoints only, and no interface endpoints, KMS keys, Secrets Manager, NAT or EC2. Each entry lists `expected_resources` (type → minimum count), `behaviours` (plain English, the future probe targets) and optional `plan_checks` (assertions on the plan JSON). `infrapilot eval --backend local` (code in `infrapilot/evaluation/`) calls `run_generate` with plan on for each prompt. It retries `backend_error`/`internal_error` once and then excludes them, and it refuses a dirty tree unless `--allow-dirty` is passed. Results go to `eval/results/<date>-<backend>-<sha>/`: `results.jsonl` has one row per prompt (category, parse/validate/plan pass, `validate_clean`, `static_correct`, `attempts=1`, tokens, latency, `cost=0`, `run_id`), and `summary.json` records commit, dirty flag, prompt sha, backend and model. Static-correct means plan-valid, every expected type present and every `plan_check` passing. Real behaviour has to wait for Phase 6 probes. Two passes at temperature 0.1 with no seed, reported as counts and percentages per difficulty for each pass, their mean, and how often a prompt got the same category in both. Done when that baseline is recorded for plan-valid and static-correct separately.
+
+### Decisions
+- 30 prompts: 10 easy / 12 medium / 8 hard.
+- Difficulty definitions: easy = one service plus its own sub-resources; medium = 2–3 services wired together; hard = VPC networking, or 4+ services with IAM between them.
+- Plain-English wording that states every requirement and names no Terraform resources.
+- No SNS-only or log-each-event requests (they would match the two system-prompt examples). At most 4 Phase 2 requests, each marked `seen_in_phase2: true`.
+- Prompt fields: `expected_resources` (type → minimum count), `behaviours` (plain English, future probe targets) and optional `plan_checks` (assertions on the plan JSON).
+- "Static-correct" metric: plan-valid, every expected type present, every `plan_check` passing. It is not real behaviour; that waits for Phase 6 probes.
+- `backend_error` and `internal_error` are retried once, then excluded from the rates.
+- 2 passes, temperature 0.1, no seed. Report agreement: how often a prompt got the same category in both passes.
+- A dirty git tree is refused unless `--allow-dirty` is passed.
+- The harness is `infrapilot eval` in `infrapilot/evaluation/`; data lives in `eval/`; results are committed.
+- Draft allowlist = plan §8, with VPC gateway endpoints only.
+- Report counts and percentages, per difficulty.
+- Measured: a real run takes 15–30 s, so a pass of 30 prompts is ~10–15 min.
+
+### Corrections
+- `ollama_test.py` was deleted in commit 7efaeca (replaced by the Ollama backend), not moved to `scripts/` as the 2026-11-11 entry says.
+- Test count is 64 = 61 non-aws + 3 aws.
+
+### Build
+- `git_dirty` in `meta.json` (this step).

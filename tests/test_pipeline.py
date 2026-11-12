@@ -3,9 +3,11 @@ binary, no AWS calls. `terraform` + `aws`: also plans with the read-only profile
 
 import json
 import shutil
+import subprocess
 
 import pytest
 
+from infrapilot import pipeline
 from infrapilot.backends import BackendError, ModelBackend, ModelResponse
 from infrapilot.pipeline import CATEGORIES, run_generate
 
@@ -131,6 +133,47 @@ def test_backend_is_called_with_built_messages(tmp_path):
     messages = json.loads((result.run_dir / "messages.json").read_text(encoding="utf-8"))
     assert backend.calls == [messages]
     assert [m["role"] for m in messages] == ["system", "user"]
+
+
+def _fake_git_status(monkeypatch, *, stdout="", returncode=0, error: Exception | None = None):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if error is not None:
+            raise error
+        return subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(pipeline.subprocess, "run", fake_run)
+    return calls
+
+
+def test_git_dirty_true_when_status_has_output(monkeypatch):
+    calls = _fake_git_status(monkeypatch, stdout="?? new_file.py\n")
+    assert pipeline._git_dirty() is True
+    assert calls == [["git", "status", "--porcelain"]]
+
+
+def test_git_dirty_false_when_status_is_empty(monkeypatch):
+    _fake_git_status(monkeypatch, stdout="")
+    assert pipeline._git_dirty() is False
+
+
+@pytest.mark.parametrize(
+    "fake",
+    [{"returncode": 128, "stdout": "fatal: not a git repository"}, {"error": FileNotFoundError("git")}],
+    ids=["non-zero-exit", "exception"],
+)
+def test_git_dirty_none_when_git_fails(monkeypatch, fake):
+    _fake_git_status(monkeypatch, **fake)
+    assert pipeline._git_dirty() is None
+
+
+def test_meta_json_has_git_dirty_key(tmp_path):
+    result = generate(tmp_path, FakeBackend(error=BackendError("down")))
+    meta = read_meta(result.run_dir)
+    assert "git_dirty" in meta
+    assert meta["git_dirty"] in (True, False, None)
 
 
 @pytest.mark.terraform

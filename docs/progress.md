@@ -22,8 +22,8 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 ---
 
 ## Before every phase
-- [x] Write a 5–10 line design note for the phase (what you're building, how it connects)
-- [x] Give that note to Claude Code as context before asking for any code
+- Write a 5–10 line design note for the phase (what you're building, how it connects)
+- Give that note to Claude Code as context before asking for any code
 
 ## After every phase
 - [ ] Whiteboard test (optional, before interviews or presentations): walk one request through what you built without looking at the code
@@ -56,7 +56,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] Choose one region for everything (region: ap-south-1)
 
 ### Done when
-- [x] Python script sends a prompt to Ollama and prints the reply (`ollama_test.py`)
+- [x] Python script sends a prompt to Ollama and prints the reply (`ollama_test.py`, later deleted in 7efaeca once `backends/ollama.py` replaced it)
 - [x] `aws sts get-caller-identity` works with both profiles
 - [x] Budget alerts exist
 
@@ -91,7 +91,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] Destroy and re-apply everything to prove it reproduces
 
 ### Bonus
-- [ ] Ask the local model to write the same Terraform and note its mistakes
+- [x] Ask the local model to write the same Terraform and note its mistakes — superseded by the Phase 2 exploration (`notes/failures.md`)
 
 ### Done when
 - [x] Provider, resource, variable, output, state, plan vs apply, what `destroy` uses state for: documented in docs/phase1_concepts.md and docs/session_log.md
@@ -132,18 +132,25 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 
 ## Phase 3 — Evaluation set and local baseline
 
+- [x] Design note in session_log.md
+- [x] Step 3.0: prompt fixes before the baseline (94f7c70)
+- [x] meta.json records git_dirty
+
 ### Write the eval set (yourself)
 - [ ] 10 easy prompts (single services)
 - [ ] 12 medium prompts (a few connected services)
 - [ ] 8 hard prompts (networking, multi-service)
 - [ ] For each prompt: list expected resources
 - [ ] For each prompt: list behaviours that should be true (future probe targets)
+- [ ] For each prompt: plan_checks where the plan JSON can show the behaviour
 - [ ] Check every prompt only uses allowlisted, cheap resources
 
 ### Build the harness
-- [ ] `eval/run_eval.py --backend local`
+- [ ] `infrapilot eval --backend local` (code in `infrapilot/evaluation/`)
 - [ ] Record per prompt: parse success, validate pass, plan pass, attempts, tokens in/out, latency, cost, failure category
 - [ ] Save results to `eval/results/` with date, git commit, backend and model name
+- [ ] Refuse a dirty tree unless --allow-dirty
+- [ ] Compute static_correct per prompt
 - [ ] Summary script that prints pass rates per difficulty level
 
 ### Run it
@@ -151,11 +158,13 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [ ] Run it a second time to check results are stable (low temperature)
 
 ### Done when
-- [ ] Local baseline recorded: easy ___% · medium ___% · hard ___% plan-valid
+- [ ] Local baseline recorded (both passes): plan-valid easy __/10 · medium __/12 · hard __/8; static-correct easy __/10 · medium __/12 · hard __/8; category agreement __%
 
 ---
 
 ## Phase 4 — Static guardrails and retry loop (local model)
+
+- [ ] Design note in session_log.md
 
 ### Security scan
 - [ ] Install Checkov (or Trivy)
@@ -384,7 +393,7 @@ Fill in as you go so the final write-up is easy.
 
 | Date | Phase | Backend / model | What changed | Plan-valid | Deploy-verified | Notes |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-11-12 | 2 | local qwen3:8b Q4_K_M | exploration, pre-Step-3.0 prompt | 4/13 | – | 1/13 correct; n=1 each, not a baseline |
 
 ## Spend log
 
