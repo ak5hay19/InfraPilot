@@ -112,7 +112,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] `backends/base.py` — interface
 - [x] `backends/ollama.py` — calls Ollama's local API, returns tokens + latency
 - [ ] `config/backends.yaml` loader with `--backend` switch
-- [ ] Output parser (reply → files) with a clear parse-failure error
+- [x] Output parser (reply → files) with a clear parse-failure error
 - [ ] Runner: write files to `runs/<run_id>/`
 - [ ] Runner: `terraform init`
 - [ ] Runner: `terraform validate` with captured output and exit code
