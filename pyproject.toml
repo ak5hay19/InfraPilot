@@ -19,3 +19,6 @@ testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 include = ["infrapilot*"]
+
+[tool.setuptools.package-data]
+"infrapilot.generator" = ["*.txt"]

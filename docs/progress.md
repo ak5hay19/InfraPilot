@@ -105,7 +105,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] Design the `ModelBackend` interface and `ModelResponse` fields
 - [x] Decide the CLI shape (`infrapilot generate "..." --backend local`)
 - [x] Decide the model output format (fenced blocks per file or short JSON)
-- [ ] Write the system prompt: output format, version pinning, one region, mandatory tags
+- [x] Write the system prompt: output format, version pinning, one region, mandatory tags
 - [x] Decide the run folder layout (`runs/<run_id>/`)
 
 ### Build (Claude Code types, you review)
