@@ -22,3 +22,4 @@ include = ["infrapilot*"]
 
 [tool.setuptools.package-data]
 "infrapilot.generator" = ["*.txt"]
+"infrapilot.runner" = ["templates/*.tf", "templates/.terraform.lock.hcl"]

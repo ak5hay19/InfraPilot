@@ -158,3 +158,5 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - backends/registry.py: get_backend(name) reads config/backends.yaml (path relative to the package), maps type -> class; --backend flag wired in the CLI step.
 - generator/parser.py: strict '### <file>' + fenced block format, only main.tf/outputs.tf, parse_error vs provider_block_written, prose -> warning; pytest suite in tests/.
 - generator/system_prompt.txt + prompts.py: runner owns provider/variables (var.region, var.name_prefix); providers limited to aws/random/archive (match the lock file); bucket_prefix for S3; inline archive_file for Lambda; SNS example (keep SNS-only prompts out of the eval set).
+- runner/workspace.py + templates/: runs/<id>/tf/ gets model files + runner-owned providers.tf, variables.tf (name_prefix default infrapilot) and a copy of the learning/ lock file; never overwrites a run.
+- First live run (prompt + parser): 'An S3 bucket with versioning enabled' parsed cleanly (no provider block, no region, no prose), but the model ignored bucket_prefix and used the inline versioning block. Validate should catch the latter (step 2.8).
