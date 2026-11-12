@@ -126,7 +126,7 @@ Order comes from the dependency graph. Steps on the same line can run in paralle
 - **PowerShell:** quote the flag, `"-out=plan.tfplan"`. Never type `<...>` placeholders; PowerShell reads `<` as an operator.
 - **Runtime:** the console defaulted to a Python 3.15 preview. I pinned stable `python3.12`.
 - **SQS name reuse:** a deleted queue's name can't be reused for 60 seconds.
-- **qwen3's earlier mistakes:** invalid `region` inside `aws_s3_bucket`; the deprecated inline `versioning` block next to the separate versioning resource; a hardcoded region I never asked for; unrequested extras (logging, website, commented-out blocks).
+- **qwen3's earlier mistakes:** `region` inside `aws_s3_bucket` (valid since AWS provider v6, but it moves the bucket to another region); the deprecated inline `versioning` block next to the separate versioning resource; a hardcoded region I never asked for; unrequested extras (logging, website, commented-out blocks).
 
 ## 6. Commands cheat sheet
 

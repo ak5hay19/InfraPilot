@@ -114,8 +114,8 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [ ] `config/backends.yaml` loader with `--backend` switch
 - [x] Output parser (reply → files) with a clear parse-failure error
 - [x] Runner: write files to `runs/<run_id>/`
-- [ ] Runner: `terraform init`
-- [ ] Runner: `terraform validate` with captured output and exit code
+- [x] Runner: `terraform init`
+- [x] Runner: `terraform validate` with captured output and exit code
 - [ ] Runner: `terraform plan -out` using the **read-only** profile
 - [ ] Run logger: save request, model reply, files, command outputs
 - [ ] `cli.py` wiring it all together

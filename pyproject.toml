@@ -16,6 +16,7 @@ dev = ["pytest~=9.2.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["terraform: runs the real terraform binary (no AWS calls)"]
 
 [tool.setuptools.packages.find]
 include = ["infrapilot*"]
