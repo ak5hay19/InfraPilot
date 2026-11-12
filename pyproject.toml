@@ -11,6 +11,9 @@ dependencies = [
     "pyyaml~=6.0.3",
 ]
 
+[project.scripts]
+infrapilot = "infrapilot.cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest~=9.2.0"]
 

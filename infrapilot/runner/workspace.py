@@ -26,27 +26,24 @@ def _check_model_filenames(files: dict[str, str]) -> None:
             raise ValueError(f"invalid file name (path separator or '..'): {name!r}")
 
 
-def prepare_run(
-    files: dict[str, str],
-    run_id: str | None = None,
-    runs_dir: Path | None = None,
-) -> Path:
-    """Create <runs_dir>/<run_id>/tf/ with the model files plus the runner templates.
-
-    Returns the run directory (not the tf/ subfolder). Never overwrites a run:
-    raises FileExistsError if the run directory already exists.
-    """
-    _check_model_filenames(files)
-
+def init_run_dir(run_id: str | None = None, runs_dir: Path | None = None) -> Path:
+    """Create <runs_dir>/<run_id>/ and return it. Raises FileExistsError if it exists."""
     if runs_dir is None:
         runs_dir = DEFAULT_RUNS_DIR
     if run_id is None:
         run_id = new_run_id()
 
     run_dir = runs_dir / run_id
-    tf_dir = run_dir / "tf"
     runs_dir.mkdir(parents=True, exist_ok=True)
     run_dir.mkdir()  # raises FileExistsError if the run already exists
+    return run_dir
+
+
+def write_tf_files(run_dir: Path, files: dict[str, str]) -> Path:
+    """Create <run_dir>/tf/ with the model files plus the runner templates; return tf/."""
+    _check_model_filenames(files)
+
+    tf_dir = run_dir / "tf"
     tf_dir.mkdir()
 
     for name, content in files.items():
@@ -56,4 +53,21 @@ def prepare_run(
     for name in RUNNER_FILES:
         shutil.copyfile(TEMPLATES_DIR / name, tf_dir / name)
 
+    return tf_dir
+
+
+def prepare_run(
+    files: dict[str, str],
+    run_id: str | None = None,
+    runs_dir: Path | None = None,
+) -> Path:
+    """Create <runs_dir>/<run_id>/tf/ with the model files plus the runner templates.
+
+    Returns the run directory (not the tf/ subfolder). Never overwrites a run:
+    raises FileExistsError if the run directory already exists. Bad file names
+    are rejected before anything is created.
+    """
+    _check_model_filenames(files)
+    run_dir = init_run_dir(run_id, runs_dir)
+    write_tf_files(run_dir, files)
     return run_dir

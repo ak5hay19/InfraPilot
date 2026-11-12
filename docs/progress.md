@@ -111,14 +111,14 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 ### Build (Claude Code types, you review)
 - [x] `backends/base.py` — interface
 - [x] `backends/ollama.py` — calls Ollama's local API, returns tokens + latency
-- [ ] `config/backends.yaml` loader with `--backend` switch
+- [x] `config/backends.yaml` loader with `--backend` switch
 - [x] Output parser (reply → files) with a clear parse-failure error
 - [x] Runner: write files to `runs/<run_id>/`
 - [x] Runner: `terraform init`
 - [x] Runner: `terraform validate` with captured output and exit code
 - [x] Runner: `terraform plan -out` using the **read-only** profile
-- [ ] Run logger: save request, model reply, files, command outputs
-- [ ] `cli.py` wiring it all together
+- [x] Run logger: save request, model reply, files, command outputs
+- [x] `cli.py` wiring it all together
 
 ### Explore
 - [ ] Run 10+ different requests
