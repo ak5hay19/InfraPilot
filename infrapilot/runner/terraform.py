@@ -1,4 +1,4 @@
-"""Run `terraform init` and `terraform validate` inside a run folder. No plan, no AWS calls."""
+"""Run terraform init / validate / plan / show inside a run folder. Never apply or destroy."""
 
 import json
 import os
@@ -35,6 +35,27 @@ class ValidateResult:
     step: StepResult
 
 
+@dataclass(frozen=True)
+class PlanResult:
+    ok: bool
+    plan_step: StepResult
+    show_step: StepResult | None
+    # Every entry of the plan's resource_changes (managed and data); each dict has
+    # keys address, type, mode, actions (tuple[str, ...]).
+    resource_changes: tuple[dict, ...]
+
+
+READONLY_PROFILE = "infrapilot-readonly"
+
+# Static credentials in the environment would silently override AWS_PROFILE.
+_STRIPPED_AWS_ENV = (
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_DEFAULT_PROFILE",
+)
+
+
 def terraform_binary() -> str:
     path = shutil.which("terraform")
     if path is None:
@@ -60,6 +81,18 @@ def _tf_env() -> dict:
     env["TF_INPUT"] = "0"
     env["CHECKPOINT_DISABLE"] = "1"
     env["TF_PLUGIN_CACHE_DIR"] = str(default_plugin_cache())
+    return env
+
+
+def _plan_env(profile: str = READONLY_PROFILE) -> dict:
+    """Subprocess env for plan/show: AWS_PROFILE=<profile>, static AWS keys removed.
+
+    Only the child environment is changed; ~/.aws is never read or written here.
+    """
+    env = _tf_env()
+    for key in _STRIPPED_AWS_ENV:
+        env.pop(key, None)
+    env["AWS_PROFILE"] = profile
     return env
 
 
@@ -93,8 +126,17 @@ def _write_log(
         f.write(text)
 
 
-def run_tf(args: list[str], run_dir: Path, step_name: str, timeout_s: float) -> StepResult:
-    """Run terraform with cwd=<run_dir>/tf and write <run_dir>/<step_name>.log."""
+def run_tf(
+    args: list[str],
+    run_dir: Path,
+    step_name: str,
+    timeout_s: float,
+    env: dict | None = None,
+) -> StepResult:
+    """Run terraform with cwd=<run_dir>/tf and write <run_dir>/<step_name>.log.
+
+    env=None uses _tf_env().
+    """
     command = [terraform_binary(), *args]
     start = time.monotonic()
     timed_out = False
@@ -106,7 +148,7 @@ def run_tf(args: list[str], run_dir: Path, step_name: str, timeout_s: float) -> 
             text=True,
             encoding="utf-8",
             errors="replace",
-            env=_tf_env(),
+            env=env if env is not None else _tf_env(),
             timeout=timeout_s,
         )
         exit_code: int | None = proc.returncode
@@ -187,6 +229,57 @@ def terraform_validate(run_dir: Path, timeout_s: float = 120) -> ValidateResult:
         )
     except (ValueError, KeyError, TypeError, AttributeError):
         return _unparseable(step)
+
+
+def _resource_change(raw: dict) -> dict:
+    change = raw.get("change") or {}
+    return {
+        "address": raw.get("address"),
+        "type": raw.get("type"),
+        "mode": raw.get("mode"),
+        "actions": tuple(change.get("actions") or ()),
+    }
+
+
+def terraform_plan(
+    run_dir: Path, timeout_s: float = 300, profile: str = READONLY_PROFILE
+) -> PlanResult:
+    """Run `plan -out=plan.tfplan` then `show -json`, both with the read-only AWS profile.
+
+    Saves show's stdout verbatim to <run_dir>/plan.json. resource_changes includes every
+    entry (managed and data); filtering is the plan guard's job.
+
+    Call cleanup_providers AFTER terraform_plan: `show` needs <run_dir>/tf/.terraform.
+    """
+    env = _plan_env(profile)
+    plan_step = run_tf(
+        ["plan", "-input=false", "-no-color", "-out=plan.tfplan"],
+        run_dir,
+        "plan",
+        timeout_s,
+        env=env,
+    )
+    if not plan_step.ok:
+        return PlanResult(ok=False, plan_step=plan_step, show_step=None, resource_changes=())
+
+    show_step = run_tf(["show", "-json", "plan.tfplan"], run_dir, "show", timeout_s, env=env)
+    with open(run_dir / "plan.json", "w", encoding="utf-8", newline="\n") as f:
+        f.write(show_step.stdout)
+    if not show_step.ok:
+        return PlanResult(
+            ok=False, plan_step=plan_step, show_step=show_step, resource_changes=()
+        )
+
+    try:
+        data = json.loads(show_step.stdout)
+        if not isinstance(data, dict):
+            raise ValueError("show output is not a JSON object")
+        changes = tuple(_resource_change(rc) for rc in data.get("resource_changes") or [])
+    except (ValueError, TypeError, AttributeError):
+        return PlanResult(
+            ok=False, plan_step=plan_step, show_step=show_step, resource_changes=()
+        )
+    return PlanResult(ok=True, plan_step=plan_step, show_step=show_step, resource_changes=changes)
 
 
 def _make_writable_and_retry(func, path, *_exc_info) -> None:

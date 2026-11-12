@@ -116,7 +116,7 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] Runner: write files to `runs/<run_id>/`
 - [x] Runner: `terraform init`
 - [x] Runner: `terraform validate` with captured output and exit code
-- [ ] Runner: `terraform plan -out` using the **read-only** profile
+- [x] Runner: `terraform plan -out` using the **read-only** profile
 - [ ] Run logger: save request, model reply, files, command outputs
 - [ ] `cli.py` wiring it all together
 

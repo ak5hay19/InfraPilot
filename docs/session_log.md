@@ -162,4 +162,5 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - First live run (prompt + parser): 'An S3 bucket with versioning enabled' parsed cleanly (no provider block, no region, no prose), but the model ignored bucket_prefix and used the inline versioning block. Validate should catch the latter (step 2.8).
 - runner/terraform.py: init (-lockfile=readonly, shared plugin cache) and validate -json; logs per step in runs/<id>/; .terraform deleted after a run (Windows copies ~820 MB of providers per run, no symlinks).
 - Finding: inline S3 versioning is only a deprecation WARNING in validate (valid=true).
-Finding: AWS provider v6 adds a `region` argument to every regional resource, so a hardcoded region inside a resource is VALID and passes validate/plan; Phase 4 plan guard must reject region != ap-south-1.
+- Finding: AWS provider v6 adds a `region` argument to every regional resource, so a hardcoded region inside a resource is VALID and passes validate/plan; Phase 4 plan guard must reject region != ap-south-1.
+- runner/terraform.py: plan -out + show -json with AWS_PROFILE=infrapilot-readonly set only in the subprocess (static AWS_* keys stripped); plan.json saved per run; providers deleted after show.
