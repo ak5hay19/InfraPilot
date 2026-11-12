@@ -28,10 +28,25 @@ def build_messages(request: str) -> list[dict[str, str]]:
     ]
 
 
-def example_reply() -> str:
-    """The text after the 'Reply:' line in the prompt. Used only by tests."""
-    lines = load_system_prompt().split("\n")
-    for index, line in enumerate(lines):
-        if line == EXAMPLE_START:
-            return "\n".join(lines[index + 1 :])
-    raise ValueError(f"system prompt has no '{EXAMPLE_START}' line")
+def example_replies() -> list[str]:
+    """The reply text of each example in the prompt. Used only by tests.
+
+    A reply starts after a line that is exactly 'Reply:' and ends before the next
+    line starting with 'EXAMPLE ' (or at the end of the prompt).
+    """
+    replies: list[str] = []
+    current: list[str] | None = None
+    for line in load_system_prompt().split("\n"):
+        if line.startswith("EXAMPLE "):
+            if current is not None:
+                replies.append("\n".join(current).strip())
+            current = None
+        elif current is not None:
+            current.append(line)
+        elif line == EXAMPLE_START:
+            current = []
+    if current is not None:
+        replies.append("\n".join(current).strip())
+    if not replies:
+        raise ValueError(f"system prompt has no '{EXAMPLE_START}' line")
+    return replies

@@ -9,7 +9,7 @@ Tick boxes as you go (`- [ ]` → `- [x]`). Each phase ends with a **Done when**
 | 0 | Local tooling and AWS safety | ✅ Done | 2026-10-12 | 2026-10-12 |
 | 1 | Terraform fundamentals | ✅ Done | 2026-10-18 | 2026-11-11 |
 | 2 | Core generation loop (local model) | ✅ Done | 2026-11-11 | 2026-11-12 |
-| 3 | Evaluation set and local baseline | ⬜ Not started | | |
+| 3 | Evaluation set and local baseline | 🟨 In progress | 2026-11-12 | |
 | 4 | Static guardrails and retry loop | ⬜ Not started | | |
 | 5 | Switch to Bedrock and compare models | ⬜ Not started | | |
 | 6 | Deploy, verify, destroy | ⬜ Not started | | |

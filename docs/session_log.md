@@ -175,7 +175,13 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 - Prompt problems found (fix before the Phase 3 baseline): the "never hardcode an ARN" rule conflicts with the AWSLambdaBasicExecutionRole hint (model invented `data.aws_partition` in 3 of 3 Lambda runs); no inline `archive_file` example; no VPC given for security groups.
 
 ### Environment
-- PowerShell version: check (5.1 vs 7) — quoting differs.
+- Shell: was Windows PowerShell 5.1 (explains the quoting failures); switched to PowerShell 7.7 (pwsh) on 2026-11-12. Keep quoting "-out=plan.tfplan" and never type <placeholders>.
 
 ### Next
 - Phase 3 design note (eval set + harness).
+
+## 2026-11-12 — Phase 3 start: Step 3.0 prompt fixes (before baseline)
+- ARN rule now only forbids ARNs of resources the model creates; managed-policy ARNs are fixed strings, exact AWSLambdaBasicExecutionRole ARN given (fixes invented data.aws_partition in 3/3 Lambda runs).
+- Added EXAMPLE 2 (inline archive_file Lambda + role + logging attachment) and a "never write ${ in inline code" rule.
+- Added "no data-source lookups of existing infra; create a VPC if one is needed".
+- Deliberately NOT fixed (model mistakes, stay in the baseline): DLQ wiring, DynamoDB attribute block, fifo_queue, route table association, bucket_prefix ignored. Eval set must not reuse the two example requests (SNS topic; Lambda that logs events). New system_prompt_sha256 will differ from Phase 2 runs.

@@ -13,16 +13,17 @@ ALREADY PROVIDED (do not write these)
 RULES
 - Use AWS provider v6 syntax. Do not use deprecated arguments or blocks.
 - Only the aws, random and archive providers are available.
-- Never set a region argument on a resource. Never hardcode a region, account ID or ARN; reference resource attributes instead (for example aws_sqs_queue.main.arn).
+- Never set a region argument on a resource. Never hardcode a region, an account ID, or the ARN of a resource you create; reference resource attributes instead (for example aws_sqs_queue.main.arn). AWS managed policy ARNs (arn:aws:iam::aws:policy/...) are fixed strings: write them exactly.
 - Name resources with var.name_prefix, for example "${var.name_prefix}-queue". For S3 buckets use bucket_prefix = "${var.name_prefix}-" instead of bucket.
 - S3 bucket settings (versioning, encryption, public access block, lifecycle, policy) are separate aws_s3_bucket_* resources, never blocks inside aws_s3_bucket.
+- Do not look up existing infrastructure (VPCs, subnets, security groups, roles, buckets) with data sources. If something needs a VPC and the request does not ask for one, create an aws_vpc with cidr_block "10.0.0.0/16".
 - Create only what the request asks for, plus what it strictly needs to work (for example an IAM role for a Lambda function). No extras, no commented-out code.
-- IAM: least privilege. Use specific actions and specific resource ARNs; never use "*" as an Action or Resource. For Lambda logging you may attach the AWS managed policy AWSLambdaBasicExecutionRole.
-- Lambda code: use data "archive_file" with an inline source block (content and filename). Never reference local files that do not exist.
+- IAM: least privilege. Use specific actions and specific resource ARNs; never use "*" as an Action or Resource. For Lambda logging, attach exactly arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole.
+- Lambda code: use data "archive_file" with an inline source block, as in EXAMPLE 2. Never reference local files. Never write ${ inside inline code; Terraform would treat it as interpolation.
 - Do not set tags unless the request asks for them; default tags come from the provider.
 - outputs.tf: output the name, ARN, URL or ID of each main resource.
 
-EXAMPLE
+EXAMPLE 1
 Request: An SNS topic.
 Reply:
 ### main.tf
@@ -36,5 +37,58 @@ resource "aws_sns_topic" "main" {
 ```hcl
 output "topic_arn" {
   value = aws_sns_topic.main.arn
+}
+```
+
+EXAMPLE 2
+Request: A Python Lambda function that logs each event.
+Reply:
+### main.tf
+```hcl
+data "archive_file" "lambda" {
+  type        = "zip"
+  output_path = "${path.module}/lambda.zip"
+
+  source {
+    filename = "index.py"
+    content  = <<-EOT
+      def handler(event, context):
+          print(event)
+          return {"ok": True}
+    EOT
+  }
+}
+
+resource "aws_iam_role" "lambda" {
+  name = "${var.name_prefix}-lambda-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_lambda_function" "main" {
+  function_name    = "${var.name_prefix}-fn"
+  role             = aws_iam_role.lambda.arn
+  runtime          = "python3.12"
+  handler          = "index.handler"
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+}
+```
+
+### outputs.tf
+```hcl
+output "function_name" {
+  value = aws_lambda_function.main.function_name
 }
 ```
