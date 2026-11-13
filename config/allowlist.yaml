@@ -1,0 +1,75 @@
+# Draft resource-type allowlist (Phase 3 draft; finalised in Phase 4).
+# Used now to check that every eval prompt stays inside cheap, fast resources.
+# Phase 4's plan guard will reject any managed resource whose type is not listed.
+# Rationale: docs/eval_set.md, section "Allowlist".
+
+resource_types:
+  # S3 (pay per use; nothing bills while empty)
+  - aws_s3_bucket
+  - aws_s3_bucket_versioning
+  - aws_s3_bucket_server_side_encryption_configuration
+  - aws_s3_bucket_public_access_block
+  - aws_s3_bucket_ownership_controls
+  - aws_s3_bucket_lifecycle_configuration
+  - aws_s3_bucket_policy
+  - aws_s3_bucket_notification
+  - aws_s3_bucket_logging
+  - aws_s3_bucket_cors_configuration
+  # SQS
+  - aws_sqs_queue
+  - aws_sqs_queue_policy
+  - aws_sqs_queue_redrive_policy
+  - aws_sqs_queue_redrive_allow_policy
+  # SNS
+  - aws_sns_topic
+  - aws_sns_topic_policy
+  - aws_sns_topic_subscription
+  # DynamoDB (on-demand only; Phase 4 guard checks billing_mode)
+  - aws_dynamodb_table
+  # Lambda
+  - aws_lambda_function
+  - aws_lambda_permission
+  - aws_lambda_event_source_mapping
+  - aws_lambda_function_event_invoke_config
+  # IAM
+  - aws_iam_role
+  - aws_iam_role_policy
+  - aws_iam_policy
+  - aws_iam_role_policy_attachment
+  # CloudWatch
+  - aws_cloudwatch_log_group
+  - aws_cloudwatch_log_metric_filter
+  - aws_cloudwatch_metric_alarm
+  # EventBridge (added to plan section 8: rules, targets and custom buses are free)
+  - aws_cloudwatch_event_bus
+  - aws_cloudwatch_event_rule
+  - aws_cloudwatch_event_target
+  - aws_scheduler_schedule
+  # VPC networking (all free; no NAT gateway, no interface endpoints)
+  - aws_vpc
+  - aws_subnet
+  - aws_internet_gateway
+  - aws_route_table
+  - aws_route
+  - aws_route_table_association
+  - aws_main_route_table_association
+  - aws_security_group
+  - aws_security_group_rule
+  - aws_vpc_security_group_ingress_rule
+  - aws_vpc_security_group_egress_rule
+  - aws_vpc_peering_connection   # same account and region; free
+  - aws_vpc_endpoint   # Gateway type only; Phase 4 guard rejects vpc_endpoint_type != Gateway
+  # API Gateway (pay per request)
+  - aws_apigatewayv2_api
+  - aws_apigatewayv2_integration
+  - aws_apigatewayv2_route
+  - aws_apigatewayv2_stage
+  - aws_api_gateway_rest_api
+  - aws_api_gateway_resource
+  - aws_api_gateway_method
+  - aws_api_gateway_integration
+  - aws_api_gateway_deployment
+  - aws_api_gateway_stage
+  # random provider (no AWS cost)
+  - random_id
+  - random_string

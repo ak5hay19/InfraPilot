@@ -208,7 +208,18 @@ Phase 1 is a learning phase. I'm building four small resources in ap-south-1 by 
 
 ### Corrections
 - `ollama_test.py` was deleted in commit 7efaeca (replaced by the Ollama backend), not moved to `scripts/` as the 2026-11-11 entry says.
-- Test count is 64 = 61 non-aws + 3 aws.
+- Test count is 112 = 109 non-aws + 3 aws (69 after the git_dirty tests, plus 43 in `tests/test_eval_prompts.py`).
 
 ### Build
 - `git_dirty` in `meta.json` (this step).
+
+### Eval set v1 (Step 3.2)
+- Added `eval/prompts.yaml` (30 prompts, 81 plan checks), `config/allowlist.yaml` and `docs/eval_set.md`. Decisions and the plan_checks spec live in docs/eval_set.md.
+- E07 got a gsi_by_email check (gap found while building the loader).
+- Decisions 13–16 from that doc:
+  - 13: report counts and percentages ("easy 6/10 (60%)"), because n is small and a percentage alone overstates precision.
+  - 14: every Lambda is Python, so prompts stay comparable and runtime choice isn't what we're testing.
+  - 15: EventBridge (rules, targets, custom buses, Scheduler) is on the allowlist: free, common in real requests, and Phase 7's janitor uses it.
+  - 16: the set is frozen once the baseline is recorded; changes go in as new ids or a `prompts_v2.yaml`, never edits.
+- `eval/results/` is excluded from the dirty check (to do in the harness step).
+- Loader: `infrapilot/evaluation/prompts.py` (frozen `PlanCheck` / `EvalPrompt`, `load_allowlist`, `load_prompts`, `validate_prompt_set`, `PromptSetError`). The real files load and pass the 10/12/8 set rules. No plan.json evaluation yet.

@@ -137,13 +137,13 @@ Status key: ⬜ Not started · 🟨 In progress · ✅ Done
 - [x] meta.json records git_dirty
 
 ### Write the eval set (yourself)
-- [ ] 10 easy prompts (single services)
-- [ ] 12 medium prompts (a few connected services)
-- [ ] 8 hard prompts (networking, multi-service)
-- [ ] For each prompt: list expected resources
-- [ ] For each prompt: list behaviours that should be true (future probe targets)
-- [ ] For each prompt: plan_checks where the plan JSON can show the behaviour
-- [ ] Check every prompt only uses allowlisted, cheap resources
+- [x] 10 easy prompts (single services)
+- [x] 12 medium prompts (a few connected services)
+- [x] 8 hard prompts (networking, multi-service)
+- [x] For each prompt: list expected resources
+- [x] For each prompt: list behaviours that should be true (future probe targets)
+- [x] For each prompt: plan_checks where the plan JSON can show the behaviour
+- [x] Check every prompt only uses allowlisted, cheap resources (enforced by the loader against config/allowlist.yaml)
 
 ### Build the harness
 - [ ] `infrapilot eval --backend local` (code in `infrapilot/evaluation/`)

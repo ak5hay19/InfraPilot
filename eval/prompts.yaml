@@ -1,0 +1,826 @@
+# InfraPilot eval set v1 (Phase 3). 30 prompts: 10 easy, 12 medium, 8 hard.
+# Rules, field meanings and the reasoning for each prompt: docs/eval_set.md.
+# Do not edit a prompt after the baseline is recorded; add a new id instead.
+#
+# Fields
+#   id                  E01..E10, M01..M12, H01..H08
+#   difficulty          easy | medium | hard
+#   seen_in_phase2      true if a Phase 2 exploration request was the same idea (max 4)
+#   request             the exact text sent to the model
+#   expected_resources  managed resource type -> minimum count in the plan
+#   behaviours          plain-English facts that should be true once deployed (Phase 6 probe targets)
+#   plan_checks         static assertions on plan.json; each passes if at least one managed
+#                       resource of `type` meets every condition given:
+#                         attrs:      path -> exact value in change.after (unknown at plan = fail)
+#                         matches:    path -> regex searched in the string value of change.after
+#                         references: {attr (optional), to} -> the resource's configuration
+#                                     expression (attr, or any attr if omitted) references a
+#                                     managed resource of type `to`, directly or through one
+#                                     data source
+#                       Paths are dot-separated; numbers index lists (nested blocks are lists).
+
+prompts:
+
+  # ---------------------------------------------------------------- EASY
+  - id: E01
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      An S3 bucket with ACLs disabled (object ownership set to bucket owner
+      enforced) and a CORS rule that allows GET requests from https://example.com.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_s3_bucket_ownership_controls: 1
+      aws_s3_bucket_cors_configuration: 1
+    behaviours:
+      - Object ownership on the bucket is BucketOwnerEnforced, so ACLs are ignored.
+      - A preflight request from https://example.com for GET is allowed; other origins are not.
+    plan_checks:
+      - id: acls_disabled
+        type: aws_s3_bucket_ownership_controls
+        attrs: {rule.0.object_ownership: BucketOwnerEnforced}
+        references: {attr: bucket, to: aws_s3_bucket}
+      - id: cors_get_example
+        type: aws_s3_bucket_cors_configuration
+        attrs:
+          cors_rule.0.allowed_methods: [GET]
+          cors_rule.0.allowed_origins: ['https://example.com']
+        references: {attr: bucket, to: aws_s3_bucket}
+  - id: E02
+    difficulty: easy
+    seen_in_phase2: true
+    request: >-
+      An S3 bucket with all public access blocked.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_s3_bucket_public_access_block: 1
+    behaviours:
+      - All four public access block settings on the bucket are true.
+      - An anonymous GET of an object is denied.
+    plan_checks:
+      - id: all_public_access_blocked
+        type: aws_s3_bucket_public_access_block
+        attrs:
+          block_public_acls: true
+          block_public_policy: true
+          ignore_public_acls: true
+          restrict_public_buckets: true
+        references: {attr: bucket, to: aws_s3_bucket}
+
+  - id: E03
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      An S3 bucket with a lifecycle rule that applies to every object and
+      deletes objects 30 days after they are created.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_s3_bucket_lifecycle_configuration: 1
+    behaviours:
+      - The bucket has one enabled lifecycle rule covering all objects that expires them after 30 days.
+    plan_checks:
+      - id: expire_after_30_days
+        type: aws_s3_bucket_lifecycle_configuration
+        attrs:
+          rule.0.status: Enabled
+          rule.0.expiration.0.days: 30
+        references: {attr: bucket, to: aws_s3_bucket}
+
+  - id: E04
+    difficulty: easy
+    seen_in_phase2: true
+    request: >-
+      A standard SQS queue with a dead-letter queue. A message moves to the
+      dead-letter queue after it has been received 3 times without being deleted.
+    expected_resources:
+      aws_sqs_queue: 2
+    behaviours:
+      - The main queue's redrive policy points at the dead-letter queue's ARN with maxReceiveCount 3.
+      - A message received 3 times without deletion appears in the dead-letter queue.
+    plan_checks:
+      - id: dlq_wired
+        type: [aws_sqs_queue, aws_sqs_queue_redrive_policy]
+        references: {attr: redrive_policy, to: aws_sqs_queue}
+
+  - id: E05
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      A standard SQS queue that delays every new message by 30 seconds, accepts
+      messages up to 64 KiB, and uses SQS-managed server-side encryption.
+    expected_resources:
+      aws_sqs_queue: 1
+    behaviours:
+      - A new message is not receivable for 30 seconds.
+      - A message larger than 64 KiB is rejected.
+      - Queue attribute SqsManagedSseEnabled is true.
+    plan_checks:
+      - id: delay_size_sse
+        type: aws_sqs_queue
+        attrs:
+          delay_seconds: 30
+          max_message_size: 65536
+          sqs_managed_sse_enabled: true
+  - id: E06
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      A standard SQS queue with a visibility timeout of 5 minutes, a message
+      retention period of 1 day, and long polling with a 20-second receive wait time.
+    expected_resources:
+      aws_sqs_queue: 1
+    behaviours:
+      - Queue attributes are VisibilityTimeout 300, MessageRetentionPeriod 86400, ReceiveMessageWaitTimeSeconds 20.
+    plan_checks:
+      - id: queue_settings
+        type: aws_sqs_queue
+        attrs:
+          visibility_timeout_seconds: 300
+          message_retention_seconds: 86400
+          receive_wait_time_seconds: 20
+
+  - id: E07
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      A DynamoDB table with on-demand billing, a string partition key named pk,
+      a string sort key named sk, and a global secondary index named by_email
+      whose partition key is a string attribute named email.
+    expected_resources:
+      aws_dynamodb_table: 1
+    behaviours:
+      - An item can be written with pk and sk and read back.
+      - The by_email index can be queried by email.
+    plan_checks:
+      - id: table_keys
+        type: aws_dynamodb_table
+        attrs:
+          billing_mode: PAY_PER_REQUEST
+          hash_key: pk
+          range_key: sk
+      - id: gsi_by_email
+        type: aws_dynamodb_table
+        attrs: {global_secondary_index.0.name: by_email}
+
+  - id: E08
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      A DynamoDB table with on-demand billing, a string partition key named
+      order_id, time-to-live enabled on the attribute expires_at, and
+      point-in-time recovery enabled.
+    expected_resources:
+      aws_dynamodb_table: 1
+    behaviours:
+      - TTL is enabled on expires_at.
+      - Point-in-time recovery is enabled.
+    plan_checks:
+      - id: table_ttl_pitr
+        type: aws_dynamodb_table
+        attrs:
+          billing_mode: PAY_PER_REQUEST
+          hash_key: order_id
+          ttl.0.enabled: true
+          ttl.0.attribute_name: expires_at
+          point_in_time_recovery.0.enabled: true
+
+  - id: E09
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      A CloudWatch Logs log group with 30-day retention and a metric filter that
+      counts log lines containing the word ERROR into a custom metric named
+      ErrorCount in the namespace InfraPilot.
+    expected_resources:
+      aws_cloudwatch_log_group: 1
+      aws_cloudwatch_log_metric_filter: 1
+    behaviours:
+      - The log group keeps events for 30 days.
+      - Writing a line containing ERROR increments InfraPilot/ErrorCount.
+    plan_checks:
+      - id: retention_30
+        type: aws_cloudwatch_log_group
+        attrs: {retention_in_days: 30}
+      - id: metric_filter
+        type: aws_cloudwatch_log_metric_filter
+        attrs:
+          metric_transformation.0.name: ErrorCount
+          metric_transformation.0.namespace: InfraPilot
+        references: {attr: log_group_name, to: aws_cloudwatch_log_group}
+
+  - id: E10
+    difficulty: easy
+    seen_in_phase2: false
+    request: >-
+      An S3 bucket with a bucket policy that denies every request not made over HTTPS.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_s3_bucket_policy: 1
+    behaviours:
+      - The bucket policy denies requests where aws:SecureTransport is false.
+      - A plain-HTTP request to the bucket is denied.
+    plan_checks:
+      - id: policy_on_bucket
+        type: aws_s3_bucket_policy
+        references: {attr: bucket, to: aws_s3_bucket}
+
+  # -------------------------------------------------------------- MEDIUM
+  - id: M01
+    difficulty: medium
+    seen_in_phase2: true
+    request: >-
+      An SQS queue that triggers a Python Lambda function, delivering messages in
+      batches of up to 10. The function prints each message body. Its IAM role
+      may only receive, delete and read the attributes of messages on that one
+      queue, plus write its own logs.
+    expected_resources:
+      aws_sqs_queue: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_lambda_event_source_mapping: 1
+    behaviours:
+      - A message sent to the queue invokes the function and is then deleted from the queue.
+      - The role can receive and delete on that queue only.
+    plan_checks:
+      - id: queue_triggers_function
+        type: aws_lambda_event_source_mapping
+        attrs: {batch_size: 10}
+        references: {attr: event_source_arn, to: aws_sqs_queue}
+      - id: mapping_targets_function
+        type: aws_lambda_event_source_mapping
+        references: {attr: function_name, to: aws_lambda_function}
+      - id: role_scoped_to_queue
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_sqs_queue}
+
+  - id: M02
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      A Python Lambda function that sends a message to an SQS queue. The queue
+      URL is passed to the function in an environment variable named QUEUE_URL.
+      The function's IAM role may only send messages to that queue, plus write
+      its own logs.
+    expected_resources:
+      aws_sqs_queue: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+    behaviours:
+      - Invoking the function puts one message on the queue.
+      - The role can send to that queue only.
+    plan_checks:
+      - id: env_has_queue
+        type: aws_lambda_function
+        references: {attr: environment, to: aws_sqs_queue}
+      - id: role_scoped_to_queue
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_sqs_queue}
+
+  - id: M03
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      An S3 bucket that sends a notification to an SQS queue whenever an object
+      is created. The queue's access policy allows only that bucket to send
+      messages to it.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_sqs_queue: 1
+      aws_sqs_queue_policy: 1
+      aws_s3_bucket_notification: 1
+    behaviours:
+      - Uploading an object puts an s3:ObjectCreated event on the queue.
+      - The queue policy allows sqs:SendMessage only from that bucket's ARN.
+    plan_checks:
+      - id: notification_to_queue
+        type: aws_s3_bucket_notification
+        references: {attr: queue, to: aws_sqs_queue}
+      - id: notification_on_bucket
+        type: aws_s3_bucket_notification
+        references: {attr: bucket, to: aws_s3_bucket}
+      - id: queue_policy_on_queue
+        type: aws_sqs_queue_policy
+        references: {attr: queue_url, to: aws_sqs_queue}
+      - id: queue_policy_names_bucket
+        type: aws_sqs_queue_policy
+        references: {attr: policy, to: aws_s3_bucket}
+
+  - id: M04
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      An S3 bucket that publishes a notification to an SNS topic whenever an
+      object is deleted. The topic's access policy allows only that bucket to
+      publish to it.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_sns_topic: 1
+      aws_sns_topic_policy: 1
+      aws_s3_bucket_notification: 1
+    behaviours:
+      - Deleting an object publishes an s3:ObjectRemoved event to the topic.
+      - The topic policy allows sns:Publish only from that bucket's ARN.
+    plan_checks:
+      - id: notification_to_topic
+        type: aws_s3_bucket_notification
+        references: {attr: topic, to: aws_sns_topic}
+      - id: notification_on_bucket
+        type: aws_s3_bucket_notification
+        references: {attr: bucket, to: aws_s3_bucket}
+      - id: topic_policy_on_topic
+        type: aws_sns_topic_policy
+        references: {attr: arn, to: aws_sns_topic}
+      - id: topic_policy_names_bucket
+        type: aws_sns_topic_policy
+        references: {attr: policy, to: aws_s3_bucket}
+  - id: M05
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      A Python Lambda function that runs whenever an object is created in an S3
+      bucket. The function prints the bucket name and object key. S3 must have
+      permission to invoke the function.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_lambda_permission: 1
+      aws_s3_bucket_notification: 1
+    behaviours:
+      - Uploading an object invokes the function once.
+    plan_checks:
+      - id: s3_may_invoke
+        type: aws_lambda_permission
+        attrs: {principal: s3.amazonaws.com}
+        references: {attr: source_arn, to: aws_s3_bucket}
+      - id: notification_to_function
+        type: aws_s3_bucket_notification
+        references: {attr: lambda_function, to: aws_lambda_function}
+
+  - id: M06
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      A Python Lambda function that runs every 15 minutes, triggered by an
+      EventBridge scheduled rule. The function prints the current time.
+    expected_resources:
+      aws_cloudwatch_event_rule: 1
+      aws_cloudwatch_event_target: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_lambda_permission: 1
+    behaviours:
+      - The function is invoked about every 15 minutes.
+    plan_checks:
+      - id: every_15_minutes
+        type: aws_cloudwatch_event_rule
+        matches: {schedule_expression: '^(rate\(15 minutes\)|cron\(0/15 \* \* \* \? \*\))$'}
+      - id: target_is_function
+        type: aws_cloudwatch_event_target
+        references: {attr: arn, to: aws_lambda_function}
+      - id: events_may_invoke
+        type: aws_lambda_permission
+        attrs: {principal: events.amazonaws.com}
+        references: {attr: source_arn, to: aws_cloudwatch_event_rule}
+
+  - id: M07
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      A standard SQS queue, an SNS topic, and a CloudWatch alarm that notifies
+      the topic when the queue has more than 100 visible messages for 5
+      consecutive minutes.
+    expected_resources:
+      aws_sqs_queue: 1
+      aws_sns_topic: 1
+      aws_cloudwatch_metric_alarm: 1
+    behaviours:
+      - The alarm watches AWS/SQS ApproximateNumberOfMessagesVisible for this queue, threshold 100, over 5 minutes.
+      - The alarm action publishes to the topic.
+    plan_checks:
+      - id: alarm_metric
+        type: aws_cloudwatch_metric_alarm
+        attrs:
+          namespace: AWS/SQS
+          metric_name: ApproximateNumberOfMessagesVisible
+          threshold: 100
+          comparison_operator: GreaterThanThreshold
+      - id: alarm_notifies_topic
+        type: aws_cloudwatch_metric_alarm
+        references: {attr: alarm_actions, to: aws_sns_topic}
+      - id: alarm_on_queue
+        type: aws_cloudwatch_metric_alarm
+        references: {attr: dimensions, to: aws_sqs_queue}
+
+  - id: M08
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      An S3 bucket and an IAM role that Lambda functions can assume. The role may
+      only read objects from that bucket, with no listing, writing or deleting.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_iam_role: 1
+    behaviours:
+      - The role can GetObject from the bucket.
+      - The role cannot ListBucket, PutObject or DeleteObject.
+      - Only lambda.amazonaws.com can assume the role.
+    plan_checks:
+      - id: role_scoped_to_bucket
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_s3_bucket}
+
+  - id: M09
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      A DynamoDB table with on-demand billing and a string partition key named id,
+      with a stream of new item images that triggers a Python Lambda function. The
+      function prints each stream record.
+    expected_resources:
+      aws_dynamodb_table: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_lambda_event_source_mapping: 1
+    behaviours:
+      - Writing an item invokes the function with a NEW_IMAGE record.
+    plan_checks:
+      - id: stream_on
+        type: aws_dynamodb_table
+        attrs:
+          billing_mode: PAY_PER_REQUEST
+          stream_enabled: true
+          stream_view_type: NEW_IMAGE
+      - id: stream_triggers_function
+        type: aws_lambda_event_source_mapping
+        matches: {starting_position: '^(LATEST|TRIM_HORIZON)$'}
+        references: {attr: event_source_arn, to: aws_dynamodb_table}
+      - id: role_scoped_to_table
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_dynamodb_table}
+
+  - id: M10
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      A Python Lambda function, its CloudWatch Logs log group with 14-day
+      retention managed by Terraform under the name Lambda writes to, and a
+      CloudWatch alarm that fires when the function reports any errors in a
+      5-minute period.
+    expected_resources:
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_cloudwatch_log_group: 1
+      aws_cloudwatch_metric_alarm: 1
+    behaviours:
+      - The function's logs land in the Terraform-managed group /aws/lambda/<function name> with 14-day retention.
+      - A failing invocation puts the alarm into ALARM.
+    plan_checks:
+      - id: lambda_log_group
+        type: aws_cloudwatch_log_group
+        attrs: {retention_in_days: 14}
+        matches: {name: '^/aws/lambda/'}
+      - id: errors_alarm
+        type: aws_cloudwatch_metric_alarm
+        attrs:
+          namespace: AWS/Lambda
+          metric_name: Errors
+
+  - id: M11
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      An SNS topic with a Python Lambda function subscribed to it. The function
+      prints each message. SNS must have permission to invoke the function.
+    expected_resources:
+      aws_sns_topic: 1
+      aws_sns_topic_subscription: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_lambda_permission: 1
+    behaviours:
+      - Publishing to the topic invokes the function once.
+    plan_checks:
+      - id: lambda_subscription
+        type: aws_sns_topic_subscription
+        attrs: {protocol: lambda}
+        references: {attr: endpoint, to: aws_lambda_function}
+      - id: subscription_on_topic
+        type: aws_sns_topic_subscription
+        references: {attr: topic_arn, to: aws_sns_topic}
+      - id: sns_may_invoke
+        type: aws_lambda_permission
+        attrs: {principal: sns.amazonaws.com}
+        references: {attr: source_arn, to: aws_sns_topic}
+
+  - id: M12
+    difficulty: medium
+    seen_in_phase2: false
+    request: >-
+      An S3 bucket whose server access logs are delivered to a second S3 bucket
+      under the prefix access-logs/.
+    expected_resources:
+      aws_s3_bucket: 2
+      aws_s3_bucket_logging: 1
+    behaviours:
+      - Requests to the first bucket produce log objects under access-logs/ in the second bucket.
+    plan_checks:
+      - id: logging_target
+        type: aws_s3_bucket_logging
+        attrs: {target_prefix: access-logs/}
+        references: {attr: target_bucket, to: aws_s3_bucket}
+      - id: logging_source
+        type: aws_s3_bucket_logging
+        references: {attr: bucket, to: aws_s3_bucket}
+
+  # ---------------------------------------------------------------- HARD
+  - id: H01
+    difficulty: hard
+    seen_in_phase2: true
+    request: >-
+      A VPC with CIDR 10.0.0.0/16, one public subnet (10.0.1.0/24) whose route
+      table sends internet traffic to an internet gateway, and one private subnet
+      (10.0.2.0/24) with no route to the internet.
+    expected_resources:
+      aws_vpc: 1
+      aws_subnet: 2
+      aws_internet_gateway: 1
+      aws_route_table: 1
+      aws_route_table_association: 1
+    behaviours:
+      - The public subnet's route table has 0.0.0.0/0 to the internet gateway.
+      - The private subnet's effective route table has no 0.0.0.0/0 route.
+    plan_checks:
+      - id: vpc_cidr
+        type: aws_vpc
+        attrs: {cidr_block: 10.0.0.0/16}
+      - id: public_subnet
+        type: aws_subnet
+        attrs: {cidr_block: 10.0.1.0/24}
+      - id: private_subnet
+        type: aws_subnet
+        attrs: {cidr_block: 10.0.2.0/24}
+      - id: route_to_igw
+        type: [aws_route, aws_route_table]
+        references: {to: aws_internet_gateway}
+      - id: association_subnet
+        type: aws_route_table_association
+        references: {attr: subnet_id, to: aws_subnet}
+      - id: association_table
+        type: aws_route_table_association
+        references: {attr: route_table_id, to: aws_route_table}
+
+  - id: H02
+    difficulty: hard
+    seen_in_phase2: false
+    request: >-
+      A VPC (10.0.0.0/16) with one private subnet and no internet gateway, a
+      DynamoDB table with on-demand billing and a string partition key named id,
+      a gateway VPC endpoint for DynamoDB attached to the private subnet's route
+      table, and a Python Lambda function running in the private subnet that
+      writes an item to the table. The function's role may only put items into
+      that table, plus what it needs for logs and VPC networking.
+    expected_resources:
+      aws_vpc: 1
+      aws_subnet: 1
+      aws_route_table: 1
+      aws_route_table_association: 1
+      aws_vpc_endpoint: 1
+      aws_dynamodb_table: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_security_group: 1
+    behaviours:
+      - Invoking the function writes an item to the table through the endpoint (no internet path exists).
+      - The role can PutItem on that table only.
+    plan_checks:
+      - id: dynamodb_gateway_endpoint
+        type: aws_vpc_endpoint
+        attrs: {vpc_endpoint_type: Gateway}
+        matches: {service_name: '\.dynamodb$'}
+        references: {attr: route_table_ids, to: aws_route_table}
+      - id: lambda_in_subnet
+        type: aws_lambda_function
+        references: {attr: vpc_config, to: aws_subnet}
+      - id: vpc_access_policy
+        type: aws_iam_role_policy_attachment
+        attrs: {policy_arn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'}
+      - id: role_scoped_to_table
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_dynamodb_table}
+
+  - id: H03
+    difficulty: hard
+    seen_in_phase2: false
+    request: >-
+      A VPC (10.0.0.0/16) spread across two availability zones, with a public and
+      a private subnet in each zone (four subnets). Public subnets route internet
+      traffic to an internet gateway. Private subnets have no internet route but
+      reach S3 through a gateway VPC endpoint.
+    expected_resources:
+      aws_vpc: 1
+      aws_subnet: 4
+      aws_internet_gateway: 1
+      aws_route_table: 2
+      aws_route_table_association: 4
+      aws_vpc_endpoint: 1
+    behaviours:
+      - The subnets sit in two different availability zones, one public and one private in each.
+      - Public subnets route 0.0.0.0/0 to the internet gateway; private subnets have no 0.0.0.0/0 route.
+      - The private route table(s) contain the S3 prefix-list route from the endpoint.
+    plan_checks:
+      - id: s3_gateway_endpoint
+        type: aws_vpc_endpoint
+        attrs: {vpc_endpoint_type: Gateway}
+        matches: {service_name: '\.s3$'}
+        references: {attr: route_table_ids, to: aws_route_table}
+      - id: route_to_igw
+        type: [aws_route, aws_route_table]
+        references: {to: aws_internet_gateway}
+      - id: association_subnet
+        type: aws_route_table_association
+        references: {attr: subnet_id, to: aws_subnet}
+
+  - id: H04
+    difficulty: hard
+    seen_in_phase2: false
+    request: >-
+      Two VPCs, 10.0.0.0/16 and 10.1.0.0/16, each with one subnet and its own
+      route table, connected by a VPC peering connection that is accepted
+      automatically. Each route table sends traffic for the other VPC's CIDR
+      through the peering connection.
+    expected_resources:
+      aws_vpc: 2
+      aws_subnet: 2
+      aws_route_table: 2
+      aws_route_table_association: 2
+      aws_vpc_peering_connection: 1
+    behaviours:
+      - The peering connection is active.
+      - The first route table has 10.1.0.0/16 via the peering connection; the second has 10.0.0.0/16.
+    plan_checks:
+      - id: peering_auto_accept
+        type: aws_vpc_peering_connection
+        attrs: {auto_accept: true}
+        references: {attr: vpc_id, to: aws_vpc}
+      - id: peering_peer_vpc
+        type: aws_vpc_peering_connection
+        references: {attr: peer_vpc_id, to: aws_vpc}
+      - id: route_via_peering
+        type: [aws_route, aws_route_table]
+        references: {to: aws_vpc_peering_connection}
+      - id: association_subnet
+        type: aws_route_table_association
+        references: {attr: subnet_id, to: aws_subnet}
+  - id: H05
+    difficulty: hard
+    seen_in_phase2: false
+    request: >-
+      An HTTP API in API Gateway with a GET /hello route that invokes a Python
+      Lambda function returning the JSON body {"message": "hello"}, served from an
+      automatically deployed default stage. API Gateway must have permission to
+      invoke the function.
+    expected_resources:
+      aws_apigatewayv2_api: 1
+      aws_apigatewayv2_integration: 1
+      aws_apigatewayv2_route: 1
+      aws_apigatewayv2_stage: 1
+      aws_lambda_function: 1
+      aws_iam_role: 1
+      aws_lambda_permission: 1
+    behaviours:
+      - 'GET <api endpoint>/hello returns 200 with {"message": "hello"}.'
+    plan_checks:
+      - id: http_api
+        type: aws_apigatewayv2_api
+        attrs: {protocol_type: HTTP}
+      - id: hello_route
+        type: aws_apigatewayv2_route
+        attrs: {route_key: GET /hello}
+        references: {attr: target, to: aws_apigatewayv2_integration}
+      - id: proxy_integration
+        type: aws_apigatewayv2_integration
+        attrs: {integration_type: AWS_PROXY}
+        references: {attr: integration_uri, to: aws_lambda_function}
+      - id: default_stage
+        type: aws_apigatewayv2_stage
+        attrs:
+          name: $default
+          auto_deploy: true
+      - id: apigw_may_invoke
+        type: aws_lambda_permission
+        attrs: {principal: apigateway.amazonaws.com}
+
+  - id: H06
+    difficulty: hard
+    seen_in_phase2: false
+    request: >-
+      When an object is created in an S3 bucket, a Python Lambda function writes
+      the object key and size to a DynamoDB table (on-demand billing, string
+      partition key named object_key). If an invocation still fails after its
+      retries, the failed event goes to an SQS queue. The function's role may only
+      put items into that table and send messages to that queue, plus write its
+      own logs.
+    expected_resources:
+      aws_s3_bucket: 1
+      aws_s3_bucket_notification: 1
+      aws_lambda_function: 1
+      aws_lambda_permission: 1
+      aws_iam_role: 1
+      aws_dynamodb_table: 1
+      aws_sqs_queue: 1
+    behaviours:
+      - Uploading an object writes one item keyed by the object key.
+      - A forced failure ends up as a message in the queue.
+      - The role can PutItem on the table and SendMessage on the queue only.
+    plan_checks:
+      - id: notification_to_function
+        type: aws_s3_bucket_notification
+        references: {attr: lambda_function, to: aws_lambda_function}
+      - id: s3_may_invoke
+        type: aws_lambda_permission
+        attrs: {principal: s3.amazonaws.com}
+        references: {attr: source_arn, to: aws_s3_bucket}
+      - id: role_scoped_to_table
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_dynamodb_table}
+      - id: role_scoped_to_queue
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_sqs_queue}
+      - id: failures_to_queue
+        type: [aws_lambda_function, aws_lambda_function_event_invoke_config]
+        references: {to: aws_sqs_queue}
+
+  - id: H07
+    difficulty: hard
+    seen_in_phase2: false
+    request: >-
+      An SNS topic for order events that fans out to two SQS queues, billing and
+      shipping. Each queue has its own dead-letter queue that receives messages
+      after 5 failed receives. Each queue's access policy allows only that topic
+      to send to it, and the subscriptions use raw message delivery.
+    expected_resources:
+      aws_sns_topic: 1
+      aws_sqs_queue: 4
+      aws_sns_topic_subscription: 2
+      aws_sqs_queue_policy: 2
+    behaviours:
+      - Publishing once delivers the raw message body to both billing and shipping.
+      - Each main queue redrives to its own dead-letter queue with maxReceiveCount 5.
+    plan_checks:
+      - id: raw_sqs_subscription
+        type: aws_sns_topic_subscription
+        attrs:
+          protocol: sqs
+          raw_message_delivery: true
+        references: {attr: topic_arn, to: aws_sns_topic}
+      - id: dlq_wired
+        type: [aws_sqs_queue, aws_sqs_queue_redrive_policy]
+        references: {attr: redrive_policy, to: aws_sqs_queue}
+      - id: queue_policy_names_topic
+        type: aws_sqs_queue_policy
+        references: {attr: policy, to: aws_sns_topic}
+
+  - id: H08
+    difficulty: hard
+    seen_in_phase2: false
+    request: >-
+      A custom EventBridge event bus with a rule that matches events whose source
+      is app.orders and sends them to an SQS queue. The queue's access policy
+      allows only that rule to send to it. A Python Lambda function consumes the
+      queue and writes each order to a DynamoDB table (on-demand billing, string
+      partition key named order_id). The function's role may only consume from
+      that queue and put items into that table, plus write its own logs.
+    expected_resources:
+      aws_cloudwatch_event_bus: 1
+      aws_cloudwatch_event_rule: 1
+      aws_cloudwatch_event_target: 1
+      aws_sqs_queue: 1
+      aws_sqs_queue_policy: 1
+      aws_lambda_function: 1
+      aws_lambda_event_source_mapping: 1
+      aws_iam_role: 1
+      aws_dynamodb_table: 1
+    behaviours:
+      - PutEvents with source app.orders on the custom bus results in one item in the table.
+      - Events with any other source are ignored.
+    plan_checks:
+      - id: rule_on_custom_bus
+        type: aws_cloudwatch_event_rule
+        matches: {event_pattern: 'app\.orders'}
+        references: {attr: event_bus_name, to: aws_cloudwatch_event_bus}
+      - id: target_is_queue
+        type: aws_cloudwatch_event_target
+        references: {attr: arn, to: aws_sqs_queue}
+      - id: queue_policy_names_rule
+        type: aws_sqs_queue_policy
+        references: {attr: policy, to: aws_cloudwatch_event_rule}
+      - id: queue_triggers_function
+        type: aws_lambda_event_source_mapping
+        references: {attr: event_source_arn, to: aws_sqs_queue}
+      - id: role_scoped_to_table
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_dynamodb_table}
+      - id: role_scoped_to_queue
+        type: [aws_iam_role_policy, aws_iam_policy]
+        references: {to: aws_sqs_queue}
